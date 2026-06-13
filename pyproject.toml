@@ -1,0 +1,46 @@
+[project]
+name = "agent-test-suite"
+version = "0.0.1"
+description = "Suite de test automatizado para agente de clasificacion (proveedor-agnostica)."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = "streamlit"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "smoke: integration smoke tests that hit a real remote agent",
+]
+
+[tool.importlinter]
+root_package = "src"
+
+[[tool.importlinter.contracts]]
+name = "domain no depende de adapters, application, dashboard ni runner"
+type = "forbidden"
+source_modules = ["src.domain"]
+forbidden_modules = ["src.adapters", "src.application", "src.dashboard", "src.runner"]
+
+[[tool.importlinter.contracts]]
+name = "application no depende de adapters concretos, dashboard ni runner"
+type = "forbidden"
+source_modules = ["src.application"]
+forbidden_modules = ["src.adapters", "src.dashboard", "src.runner"]

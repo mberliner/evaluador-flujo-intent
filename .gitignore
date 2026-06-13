@@ -1,0 +1,26 @@
+.venv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+.env
+*.local
+
+# Override local de permisos de Claude Code (por-usuario, no versionar)
+.claude/settings.local.json
+
+# Datos de entrada y artefactos: nunca se committean.
+# El CSV/JSON del workspace padre son referencia del schema; el usuario los
+# carga en runtime via la interfaz (un caso por pantalla en modo simple,
+# archivo via interfaz estable en modo batch).
+data/*
+!data/.gitkeep
+
+# Runs persistidos (histórico local; no committeamos por defecto).
+runs/*
+!runs/.gitkeep

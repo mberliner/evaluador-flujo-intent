@@ -1,0 +1,123 @@
+{
+  "form": {
+    "type": "object",
+    "description": "formulario input para el agente",
+    "properties": {
+      "sponsor": {
+        "type": "string",
+        "description": "Nombre y cargo del responsable ejecutivo que avala la iniciativa."
+      },
+      "tipo_intent": {
+        "type": "object",
+        "description": "Categoría del intent según su naturaleza",
+        "properties": {
+          "negocio": {
+            "type": "boolean",
+            "description": "Resultado de valor para cliente externo, ingreso o posición de mercado.",
+            "default": false
+          },
+          "operativo": {
+            "type": "boolean",
+            "description": "Mejora de proceso interno, eficiencia, calidad o ciclo de tiempo.",
+            "default": false
+          },
+          "capacidad_equipos": {
+            "type": "boolean",
+            "description": " Productividad del equipo, habilitación con herramientas IA (ej. Copilots internos).",
+            "default": false
+          },
+          "tecnico_arquitectural": {
+            "type": "boolean",
+            "description": "Mejora de plataforma, reducción de deuda técnica, infraestructura habilitante.",
+            "default": false
+          }
+        }
+      },
+      "mail_contacto": {
+        "type": "string",
+        "description": "Contacto del indivuo/grupo que será notificado del FI."
+      },
+      "restricciones": {
+        "type": "string",
+        "description": "Limitaciones conocidas de tipo técnico, regulatorio u operativo. Valor por defecto: Sin restricciones.",
+        "default": "sin restricciones"
+      },
+      "flujo_de_valor": {
+        "type": "string",
+        "description": "Proceso o flujo de negocio que el intent impacta o transforma."
+      },
+      "area_proponente": {
+        "type": "string",
+        "description": "direccion o gerencia de la empresa que propone el intent"
+      },
+      "supuesto_riesgo": {
+        "type": "string",
+        "description": "Hipótesis sobre riesgos preliminares identificados.",
+        "default": "sin supuesto riesgo"
+      },
+      "datos_requeridos": {
+        "type": "object",
+        "description": "tipos de datos que necesita procesar o consumir la solución de ia",
+        "properties": {
+          "otros": {
+            "type": "object",
+            "description": "datos adicionales que no estan en la lista de sugeridos",
+            "properties": {
+              "estado": {
+                "type": "boolean",
+                "description": "indica si la selección otros esta activada o no",
+                "default": false
+              },
+              "message": {
+                "type": "string",
+                "description": "Descripción libre del tipo de dato cuando no encaja en ninguna categoría anterior.",
+                "default": "N/A"
+              }
+            }
+          },
+          "ninguno": {
+            "type": "boolean",
+            "description": "El intent no requiere consumo de datos externos ni internos.",
+            "default": false
+          },
+          "datos_publicos": {
+            "type": "boolean",
+            "description": "Información de acceso abierto sin restricción: ejemplo normativa pública, datos de mercado, documentación oficial.",
+            "default": false
+          },
+          "datos_operativos": {
+            "type": "boolean",
+            "description": "Datos generados por procesos internos: ejemplo logs, transacciones, registros de sistemas.",
+            "default": false
+          },
+          "datos_personales": {
+            "type": "boolean",
+            "description": "Información identificable de personas, ya sea empleados, clientes o proveedor: ejemplo nombre, email, DNI, historial, datos sensibles.",
+            "default": false
+          },
+          "datos_confidenciales": {
+            "type": "boolean",
+            "description": "Información de uso interno restringido: ejemplo estrategia comercial, contratos, propiedad intelectual",
+            "default": false
+          }
+        }
+      },
+      "impacto_personas": {
+        "type": "string",
+        "description": "Tipo de persona a la que afecta y como le afecta la solucion (empleado, cliente, proveedor), cantidad de personas y nivel de criticidad. "
+      },
+      "metricas_de_exito": {
+        "type": "string",
+        "description": "Indicadores medibles que definen si el intent funcionó."
+      },
+      "nombre_iniciativa": {
+        "type": "string",
+        "description": "Nombre descriptivo de la iniciativa."
+      },
+      "declaracion_intent": {
+        "type": "string",
+        "description": "Descripción funcional del estado deseado. Responde qué hace el sistema, para quién y en qué contexto, el dolor que busca resolver"
+      }
+    }
+  }
+}

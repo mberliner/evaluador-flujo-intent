@@ -1,0 +1,38 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        args: [--strict]
+        files: ^src/
+        additional_dependencies:
+          - types-requests
+
+  - repo: local
+    hooks:
+      - id: naming-agnostic
+        name: naming agnostico (SPEC-000-naming)
+        entry: python tools/check_naming.py src
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: import-linter
+        name: lint-imports (capas Clean Architecture)
+        entry: lint-imports
+        language: system
+        pass_filenames: false
+
+      - id: pytest-unit
+        name: pytest unit
+        entry: pytest tests/unit
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
