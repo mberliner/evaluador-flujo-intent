@@ -1,5 +1,5 @@
 [project]
-name = "agent-test-suite"
+name = "evaluador-flujo-intent"
 version = "0.0.1"
 description = "Suite de test automatizado para agente de clasificacion (proveedor-agnostica)."
 requires-python = ">=3.11"

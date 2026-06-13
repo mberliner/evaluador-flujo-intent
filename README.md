@@ -1,4 +1,4 @@
-# agent-test-suite
+# evaluador-flujo-intent
 
 Suite de pruebas para un **agente de clasificación de iniciativas de IA**. Envía casos al agente, extrae la clasificación que devuelve y la compara contra el resultado esperado para medir su accuracy y detectar regresiones.
 

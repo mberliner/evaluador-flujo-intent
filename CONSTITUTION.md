@@ -1,4 +1,4 @@
-# Constitución — agent_test_suite
+# Constitución del proyecto
 
 **Versión:** 0.5.2 | **Ratificada:** 2026-05-26 | **Última enmienda:** 2026-06-13
 

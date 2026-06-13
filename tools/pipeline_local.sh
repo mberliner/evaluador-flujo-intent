@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Pipeline local SDD — verifica agent_test_suite antes del SDD-Check.
+# Pipeline local SDD — verifica el proyecto antes del SDD-Check.
 # Combina los checks propios del proyecto con los incorporados de reflexio (bandit).
 #
 # Uso: bash tools/pipeline_local.sh [--fail-fast]
-# Ejecutar desde la raiz de agent_test_suite.
+# Ejecutar desde la raiz del proyecto.
 
 set -euo pipefail
 
