@@ -1,0 +1,61 @@
+name: ci
+
+# Solo corre ante cambios de codigo; cambios en docs/, specs/ o historial/ no disparan CI.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tools/**"
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "tools/**"
+      - "pyproject.toml"
+      - "requirements*.txt"
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/ci.yml"
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+
+      # ── calidad de codigo (espeja tools/pipeline_local.sh, sin gates de docs) ──
+      - name: ruff lint
+        run: python -m ruff check src tests tools
+
+      - name: ruff format --check
+        run: python -m ruff format --check src tests tools
+
+      - name: mypy --strict
+        run: python -m mypy --strict src
+
+      - name: naming agnostico (SPEC-000-naming)
+        run: python tools/check_naming.py src
+
+      - name: lint-imports (capas Clean Architecture)
+        run: lint-imports
+
+      # ── seguridad ──
+      - name: bandit
+        run: python -m bandit -r src -q
+
+      # ── tests ──
+      - name: pytest unit
+        run: python -m pytest tests/unit -v
