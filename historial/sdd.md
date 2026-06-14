@@ -1392,3 +1392,23 @@ Refactor arquitectónico (no agrega capacidad de producto; gobernado por ADR, no
 - Specs leídas: SPEC-004-single-case-file, CONSTITUTION.md, SPECS_REGISTRY.md.
 - Includes/excludes verificados: helpers FR-007 del dashboard ejercitados por código real (no copia); fixtures usan `_inject_clasificacion` real; sin cambio en `src/` (solo tests + spec); pipeline local VERDE 9/9 (238 tests).
 - SSOTs afectados: SPEC-004 (Coverage mapping FR-007 + Historial), historial/sdd.md.
+
+---
+
+## 2026-06-14 — Terminología: «tajada vertical» → «corte vertical»
+
+**Scope (cambio editorial/terminológico, sin cambio de comportamiento):**
+
+A pedido del usuario se unificó el vocabulario del proyecto: «tajada vertical» (traducción rústica de *vertical slice*) pasa a **«corte vertical»**, más técnico y neutro. Renombradas las 7 ocurrencias en SSOTs vivos (`specs/SPEC-001`, `specs/SPEC-003` ×2, `specs/SPEC-009`, `docs/SPEC-FORMAT` ×2, `src/dashboard/app.py` docstring), con corrección de concordancia de género (`la/primera/completa` → `el/primer/completo`). El término queda fijado como canónico en `docs/SPEC-FORMAT.md` (nota "Término canónico"), prohibiendo «tajada» y «rebanada».
+
+**Decisiones tomadas:**
+- `historial/sdd.md` **no** se modifica (log append-only): las 4 ocurrencias previas reflejan la terminología vigente al momento de escribirse.
+- No se toca `SPEC-000-naming`: regula tokens de tecnología (provider/framework/formato), no vocabulario de prosa; el SSOT del término es `docs/SPEC-FORMAT.md`.
+- El docstring de `src/dashboard/app.py` es cosmético → sin test nuevo.
+
+**Deuda arrastrada:** ninguna.
+
+**[SDD-Check] — 2026-06-14**
+- Specs leídas: SPEC-000-naming, SPEC-001-single-case-input, SPEC-003-classification-evaluator, SPEC-009-parallel-execution, docs/SPEC-FORMAT.md, CLAUDE.md.
+- Includes/excludes verificados: 7 ocurrencias en specs/docs/src renombradas (grep "tajada" en `specs/ docs/ src/` → 0 residuos); `historial/` excluido a propósito; término canónico fijado en SPEC-FORMAT; cambio sin comportamiento (docstring) → sin test nuevo.
+- SSOTs afectados: SPEC-001, SPEC-003, SPEC-009, docs/SPEC-FORMAT.md, src/dashboard/app.py, historial/sdd.md.

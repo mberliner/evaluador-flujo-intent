@@ -1,6 +1,6 @@
 """Dashboard del modo simple: un caso por pantalla.
 
-Tajada vertical completa: form -> validacion -> envio al agente ->
+Corte vertical completo: form -> validacion -> envio al agente ->
 evaluacion -> veredicto. Ver specs/SPEC-001 y SPEC-003.
 
 El framework UI concreto se importa solo aqui dentro para mantener el

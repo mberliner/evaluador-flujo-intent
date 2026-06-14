@@ -6,7 +6,7 @@
 
 ## Propósito
 
-Comparar la respuesta del agente contra el ground truth del caso y emitir un veredicto pass/fail. Cierra la primera tajada vertical útil del modo simple: el usuario carga un caso, lo envía, ve la respuesta del agente y el veredicto.
+Comparar la respuesta del agente contra el ground truth del caso y emitir un veredicto pass/fail. Cierra el primer corte vertical útil del modo simple: el usuario carga un caso, lo envía, ve la respuesta del agente y el veredicto.
 
 ## Reglas de evaluación
 
@@ -44,7 +44,7 @@ class ClassificationEvaluator:
 
 ## Integración con el dashboard (modo simple)
 
-Al cerrar SPEC-003 el dashboard cubre la tajada vertical completa:
+Al cerrar SPEC-003 el dashboard cubre el corte vertical completo:
 
 1. Usuario carga form → `Validar caso`.
 2. Si validó, aparece botón `Enviar al agente`.

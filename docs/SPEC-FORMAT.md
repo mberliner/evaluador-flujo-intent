@@ -13,7 +13,9 @@ Las primeras specs del proyecto se redactaron con un formato propio: secciones l
 
 ### GitHub Spec Kit
 
-El formato híbrido toma como base el **GitHub Spec Kit** — un método de especificación orientado a tajadas verticales independientes, con User Stories priorizadas, requisitos funcionales con verbos modales (`MUST`/`SHOULD`/`MAY`) y criterios de éxito medibles en formato Given/When/Then. Su ventaja principal: cada User Story es demostrable y testeable de forma aislada, lo que obliga a pensar en MVP incremental en lugar de especificar funcionalidad monolítica.
+El formato híbrido toma como base el **GitHub Spec Kit** — un método de especificación orientado a cortes verticales independientes, con User Stories priorizadas, requisitos funcionales con verbos modales (`MUST`/`SHOULD`/`MAY`) y criterios de éxito medibles en formato Given/When/Then. Su ventaja principal: cada User Story es demostrable y testeable de forma aislada, lo que obliga a pensar en MVP incremental en lugar de especificar funcionalidad monolítica.
+
+> **Término canónico:** **corte vertical** — una capacidad que atraviesa todas las capas (UI → dominio → datos) y entrega valor demostrable de punta a punta (traducción de *vertical slice*). Es el vocabulario oficial del proyecto; no usar "tajada" ni "rebanada".
 
 ### Por qué hibridar
 
@@ -108,7 +110,7 @@ El corte se acordó el **2026-05-25** al redactar SPEC-002b y SPEC-003b — las 
 
 ## Estructura de una spec con múltiples User Stories (estándar multi-HU)
 
-Cuando una spec contiene **dos o más User Stories**, cada historia es una tajada vertical independiente y se redacta **encapsulada de inicio a fin**: lleva sus propios `Acceptance Scenarios`, `Functional Requirements`, `Key Entities`, `Success Criteria`, `Assumptions`, `Coverage mapping` y `Fuera de alcance`. Sólo el **header** (`Estado`/`Iter`/`Formato`/`Depende de`/`Relacionada con`) y el **`Historial`** son globales.
+Cuando una spec contiene **dos o más User Stories**, cada historia es un corte vertical independiente y se redacta **encapsulada de inicio a fin**: lleva sus propios `Acceptance Scenarios`, `Functional Requirements`, `Key Entities`, `Success Criteria`, `Assumptions`, `Coverage mapping` y `Fuera de alcance`. Sólo el **header** (`Estado`/`Iter`/`Formato`/`Depende de`/`Relacionada con`) y el **`Historial`** son globales.
 
 Reglas:
 

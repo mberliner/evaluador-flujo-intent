@@ -20,7 +20,7 @@
 
 Como usuario quiero ejecutar una suite de N casos **desde el runner headless** con un número configurable de envíos simultáneos al agente, para reducir el tiempo total de corrida cuando el agente tolera carga concurrente, sin perder trazabilidad ni determinismo en la evaluación.
 
-**Why this priority:** la ejecución secuencial de un batch grande es el cuello de botella principal de la herramienta una vez que existe el modo batch (SPEC-006). La concurrencia configurable en headless permite calibrar la carga contra el agente sin cambiar el modelo de resultados, y es la tajada de mayor valor y menor riesgo: no toca el modelo de interacción de la UI.
+**Why this priority:** la ejecución secuencial de un batch grande es el cuello de botella principal de la herramienta una vez que existe el modo batch (SPEC-006). La concurrencia configurable en headless permite calibrar la carga contra el agente sin cambiar el modelo de resultados, y es el corte de mayor valor y menor riesgo: no toca el modelo de interacción de la UI.
 
 **Independent Test:** ejecuto N casos con `concurrency=K` desde `python -m src.runner --concurrency K` → los K primeros se despachan al mismo tiempo → el run resultante tiene N `TestResult` con los mismos veredictos que la ejecución secuencial (determinismo garantizado por Principio III). Verificable sin el dashboard.
 

@@ -8,7 +8,7 @@
 
 Permitir al usuario cargar **un caso de prueba por pantalla** mediante un formulario, validarlo contra el schema del dominio y dejarlo listo para envío al agente (envío real se aborda en [[SPEC-002-agent-client]]).
 
-Es la primera tajada vertical útil del producto y arranca el modo simple del dashboard.
+Es el primer corte vertical útil del producto y arranca el modo simple del dashboard.
 
 ## Alcance
 
