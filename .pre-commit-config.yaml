@@ -1,19 +1,21 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.15.14
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v2.1.0
     hooks:
       - id: mypy
         args: [--strict]
         files: ^src/
         additional_dependencies:
           - types-requests
+          - python-dotenv
+          - streamlit
 
   - repo: local
     hooks:
@@ -22,12 +24,14 @@ repos:
         entry: python tools/check_naming.py src
         language: system
         types: [python]
+        files: ^src/
         pass_filenames: false
 
       - id: import-linter
         name: lint-imports (capas Clean Architecture)
         entry: lint-imports
         language: system
+        files: ^src/
         pass_filenames: false
 
       - id: pytest-unit
