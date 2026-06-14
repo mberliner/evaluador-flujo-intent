@@ -61,7 +61,7 @@ Copy-Item .env.example .env      # rellenar con credenciales reales
 | Seguridad estática | `bandit -r src -q` |
 | Pipeline local completo (pre-SDD-Check) | `bash tools/pipeline_local.sh` |
 | Pipeline local — detener al primer fallo | `bash tools/pipeline_local.sh --fail-fast` |
-| Todo lo anterior vía hook de commit | `pre-commit run --all-files` |
+| Hooks de commit (ruff, mypy, naming, capas) | `pre-commit run --all-files` |
 
 ## Convenciones
 
@@ -88,6 +88,15 @@ Aplicar `specs/SPEC-000-naming.md`. Los identificadores en `src/` no pueden cont
 - Cierre de iteración → incluir bloque `[SDD-Check]` (ver `docs/CONTRIBUTING.md`).
 
 ## Cuándo correr qué
+
+Reparto por trigger (SSOT):
+
+- **Hook de commit** (`pre-commit`, bloquea el commit): ruff (lint+format), mypy `--strict`, naming agnóstico y capas (`import-linter`), acotados a `^src/`. Los hooks locales son auto-contenidos (`language: python`): no requieren el venv en PATH.
+- **Push**: sin hooks. (`pytest` se retiró del `pre-push` el 2026-06-14; vivía solo en el pipeline local.)
+- **Pipeline local** (`bash tools/pipeline_local.sh`, cierre de iteración): todo lo del commit + gobernanza (constitución, trazabilidad SDD) + `bandit` + `pytest tests/unit`.
+- **CI — GitHub Actions** (`.github/workflows/ci.yml`): valida el código (ruff, mypy, naming, capas, bandit, pytest unit) ante `push` a `main` o PR que toque `src/`, `tests/`, `tools/` o manifiestos. Cambios solo de `docs/`/`specs/`/`historial/` no lo disparan. No incluye los gates de gobernanza documental.
+
+Resumen operativo:
 
 - Cada cambio: `pre-commit run --all-files` (corre solo, hook bloquea commit).
 - Antes de PR: tests unitarios + smoke + verificación de capas + naming.

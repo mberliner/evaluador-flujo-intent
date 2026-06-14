@@ -22,7 +22,7 @@ repos:
       - id: naming-agnostic
         name: naming agnostico (SPEC-000-naming)
         entry: python tools/check_naming.py src
-        language: system
+        language: python
         types: [python]
         files: ^src/
         pass_filenames: false
@@ -30,6 +30,7 @@ repos:
       - id: import-linter
         name: lint-imports (capas Clean Architecture)
         entry: lint-imports
-        language: system
+        language: python
+        additional_dependencies: [import-linter]
         files: ^src/
         pass_filenames: false

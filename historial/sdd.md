@@ -4,6 +4,33 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-06-14 — Saldo de deuda de git/triggers: hooks acotados + CI de GitHub Actions
+
+**Scope cerrado (tooling de validación; toca `.pre-commit-config.yaml`, `.github/`, `docs/`, spec de bootstrap):**
+
+SPEC-000-bootstrap arrastraba desde Iter 0 un único criterio pendiente — `pre-commit run --all-files` en verde, bloqueado por «requiere git init». El repo ya está bajo git, así que se saldó la deuda y, de paso, se ordenó el reparto de validaciones por trigger.
+
+**Decisiones tomadas:**
+
+- **Hooks de commit acotados a `^src/`** (ruff, mypy, naming, capas): no corren sobre cambios de docs/specs.
+- **`pytest` retirado del trigger `pre-push`** (era el único hook de push; no aportaba sobre el reparto vigente, a pedido del usuario). El hook de git `pre-push` quedó desinstalado. Los tests viven en el pipeline local y en CI.
+- **Hooks locales `naming`/`import-linter` migrados de `language: system` a `language: python`** (auto-contenidos): antes fallaban fuera del venv porque el sistema no tiene `python`/`lint-imports` en PATH. Verificado `pre-commit run --all-files` verde desde entorno limpio.
+- **CI de GitHub Actions** (`.github/workflows/ci.yml`): valida el código (ruff, mypy, naming, capas, bandit, pytest unit) ante `push` a `main` o PR que toque `src/`/`tests/`/`tools/`/manifiestos. Filtrado por paths: cambios solo de `docs/`/`specs/`/`historial/` no lo disparan (decisión del usuario). No incluye los gates de gobernanza documental (constitución, trazabilidad), que siguen solo en el pipeline local.
+- **Actualización del bump de tooling** (commit previo del día): ruff v0.6.9→v0.15.14, mypy v1.11.2→v2.1.0; deps de mypy `python-dotenv`/`streamlit`.
+
+**SSOT del reparto commit/push/pipeline/CI:** `docs/DEVELOPMENT.md` §«Cuándo correr qué» (actualizado). SPEC-000-bootstrap referencia ese SSOT y marca sus criterios como cumplidos.
+
+**Sin cambio de comportamiento del producto:** solo tooling/CI. Pendiente operativo (no de spec): activar branch protection en GitHub para que el check `checks` sea obligatorio, y `git push` para la primera corrida.
+
+**Deuda arrastrada:** ninguna nueva; saldada la de Iter 0.
+
+**[SDD-Check] — 2026-06-14 (git/triggers + CI)**
+- Specs leídas: SPEC-000-bootstrap, SPEC-000-naming, SPECS_REGISTRY, CONSTITUTION.md, CLAUDE.md.
+- Includes/excludes verificados: CI y hooks de commit restringidos a paths de código (`^src/`, etc.); gobernanza documental excluida de CI (solo pipeline local); `pre-commit run --all-files` verde desde entorno limpio.
+- SSOTs afectados: SPEC-000-bootstrap (tooling, config, criterios, notas), `docs/DEVELOPMENT.md` (§Comandos clave, §Cuándo correr qué), `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, historial/sdd.md.
+
+---
+
 ## 2026-06-14 — Simplificación editorial de SPEC-011 y SPEC-012 (sin cambio de comportamiento)
 
 **Scope cerrado (solo documentación de spec; sin tocar `src/` ni tests):**
