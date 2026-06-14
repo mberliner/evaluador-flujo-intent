@@ -4,6 +4,30 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-06-14 — Simplificación editorial de SPEC-011 y SPEC-012 (sin cambio de comportamiento)
+
+**Scope cerrado (solo documentación de spec; sin tocar `src/` ni tests):**
+
+SPEC-011 y SPEC-012 acumulaban redundancia: cada decisión aparecía repetida hasta en cinco lugares (Clarifications Q&A → FR → Key Entities → Coverage → Historial), más material transitorio ya cumplido. Se simplificaron sin perder funcionalidad, estilo ni calidad, a pedido del usuario.
+
+**Decisiones tomadas (método elegido por el usuario vía AskUserQuestion):**
+
+- **Clarifications condensadas in situ** en ambas specs: cada Q&A queda como pregunta + decisión en 1-2 líneas con puntero al FR que la implementa, eliminando los tails de "Consecuencia/rationale" que ya viven en los FR. La sección sigue apta para futuros `/clarify`.
+- **Historial comprimido** en ambas specs: SPEC-011 5→3 entradas, SPEC-012 ~10→5 entradas; se conservan todas las fechas/decisiones netas, se quita la narrativa de proceso que duplicaba Clarifications/FR.
+- **SPEC-011 Key Entities** reducidas a punteros de sus FR (sin re-explicar el rationale de `AgentInput`/`EvaluatedResult`/registro puro, ya normado en FR-002/011/014/015).
+- **SPEC-012:** retirada la «Nota de mapeo» FR-NNN→FR-USn (transitoria; la reorganización ya está cerrada y las Clarifications citan los FR-USn vigentes).
+
+**Sin cambio de comportamiento ni decisión nueva:** no se tocó contenido normativo de los FR, Acceptance Scenarios, Success Criteria, Coverage ni la sección «Referencia: cuestionario de origen». Las specs siguen en estado `draft`.
+
+**Deuda arrastrada:** ninguna nueva.
+
+**[SDD-Check] — 2026-06-14 (simplificación editorial)**
+- Specs leídas: SPEC-011-agent-under-test, SPEC-012-translation-evaluator, CONSTITUTION.md, SPECS_REGISTRY.md, CLAUDE.md.
+- Includes/excludes verificados: sin cambios en `src/` ni tests; sin referencias colgadas a la «Nota de mapeo» ni a FR-NNN viejos en el cuerpo normativo (solo en Historial, intencional); contenido normativo (FR/Acceptance/SC/Coverage) intacto.
+- SSOTs afectados: SPEC-011 (Clarifications, Key Entities, Historial), SPEC-012 (Clarifications, Historial), historial/sdd.md.
+
+---
+
 ## 2026-06-13 — Reorganización de SPEC-012 en 3 User Stories (sin cambio de comportamiento)
 
 **Scope cerrado (solo documentación de spec; sin tocar `src/` ni tests):**
