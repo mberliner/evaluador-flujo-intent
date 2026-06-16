@@ -188,6 +188,7 @@ Toda spec respeta **SPEC-000-naming**: los nombres de módulos, clases y funcion
   - Mal: "El `session_state` se limpia con `form_gen += 1` y se llama `ui.rerun()`."
 - Marcar `[x]` al cerrar la iteración, nunca antes.
 - **Toda spec con UI MUST incluir un SC de verificación funcional en la aplicación real** — no basta con tests unitarios. Ese SC es el último en marcarse `[x]` y es requisito de cierre.
+- **FR y SC no son 1 a 1.** Operan en ejes distintos: el FR describe *qué construye* el sistema (una pieza de comportamiento); el SC describe *cómo se sabe que el corte vertical entrega valor* (un objetivo observable de la User Story). Lo normal es muchos FR y pocos SC: un SC suele apoyarse en varios FR, y un FR de comportamiento interno puede no tener SC propio. Si hay tantos SC como FR, revisar: probablemente los SC se redactaron como espejo del contrato y no como criterios de aceptación.
 
 ### Acceptance Scenarios
 
@@ -197,6 +198,7 @@ Toda spec respeta **SPEC-000-naming**: los nombres de módulos, clases y funcion
 ### Coverage mapping
 
 - Cada FR y SC debe tener al menos una entrada en el coverage mapping.
+- **Una entrada en el mapping no es "un test por requisito".** La relación requisito ↔ verificador es muchos-a-muchos: un mismo test puede cubrir varios FR; un FR puede exigir varios artefactos (función + adaptador + tests); y un FR de **consistencia documental** o de **UI** se verifica por revisión cruzada o verificación funcional visual, no con `pytest`. La regla efectiva (CLAUDE.md) es: todo FR que describa **comportamiento ejecutable** MUST tener un test; los demás, una entrada de verificación trazable.
 - Actualizar el mapping cuando la implementación difiere de lo planeado.
 
 ### Estado y ciclo de vida

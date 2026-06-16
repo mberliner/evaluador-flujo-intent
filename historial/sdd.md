@@ -4,6 +4,21 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-06-16 — Aclaración de método: FR↔SC y cobertura no son 1 a 1
+
+**Scope cerrado (método de redacción de specs; toca solo `docs/SPEC-FORMAT.md`):**
+
+A raíz de la pregunta «¿FR y SC son 1 a 1?», se explicitó en el SSOT del formato lo que estaba implícito en las specs (p. ej. SPEC-008: 8 FR / 3 SC) pero no escrito en la guía:
+
+- **Sección SC**: FR y SC operan en ejes distintos (qué se construye vs. qué valor observable); muchos FR, pocos SC; un FR interno puede no tener SC.
+- **Sección Coverage mapping**: una entrada del mapping no es «un test por requisito» — relación requisito↔verificador es N:M; FR de consistencia documental o UI se verifican por revisión/verificación visual, no con `pytest`.
+
+**Sin cambio de comportamiento ni de specs existentes:** solo documentación del método; no requiere tests. Análisis conceptual de origen vive en el repo `analisis/SDD/` (Línea B).
+
+**Deuda arrastrada:** ninguna.
+
+---
+
 ## 2026-06-14 — Saldo de deuda de git/triggers: hooks acotados + CI de GitHub Actions
 
 **Scope cerrado (tooling de validación; toca `.pre-commit-config.yaml`, `.github/`, `docs/`, spec de bootstrap):**
