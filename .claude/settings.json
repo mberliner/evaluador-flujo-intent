@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PYBIN=\"$CLAUDE_PROJECT_DIR/.venv/bin/python\"; [ -x \"$PYBIN\" ] || PYBIN=\"$(command -v python3 || command -v python || true)\"; [ -n \"$PYBIN\" ] || exit 0; \"$PYBIN\" \"$CLAUDE_PROJECT_DIR/tools/sdd_gate.py\""
+            "command": "PYBIN=\"$CLAUDE_PROJECT_DIR/.venv/Scripts/python.exe\"; [ -f \"$PYBIN\" ] || PYBIN=\"$CLAUDE_PROJECT_DIR/.venv/bin/python\"; [ -f \"$PYBIN\" ] || PYBIN=\"$(where python 2>/dev/null | tr -d '\\r' | grep -vi 'WindowsApps' | head -1)\"; [ -f \"$PYBIN\" ] || exit 0; \"$PYBIN\" \"$CLAUDE_PROJECT_DIR/tools/sdd_gate.py\""
           }
         ]
       }
