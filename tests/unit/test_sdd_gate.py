@@ -2,17 +2,20 @@
 
 Verifican la decisión del gate sobre un repo temporal: bloquea edición de src/
 sin spec declarada o con declaración inválida, permite con declaración válida y
-permite siempre fuera de src/.
+permite siempre fuera de src/. Incluye chequeo de mtime: la spec debe haber
+sido editada después de declararla en current-spec.
 """
 
 from __future__ import annotations
 
+import os
+import time
 from pathlib import Path
 
 from tools.sdd_gate import decide
 
 
-def _repo(tmp_path: Path, declared: str | None) -> Path:
+def _repo(tmp_path: Path, declared: str | None, *, spec_touched: bool = True) -> Path:
     (tmp_path / "src").mkdir()
     (tmp_path / "specs").mkdir()
     (tmp_path / "specs" / "SPEC-001-x.md").write_text("# SPEC-001-x\n", encoding="utf-8")
@@ -24,6 +27,12 @@ def _repo(tmp_path: Path, declared: str | None) -> Path:
     if declared is not None:
         (tmp_path / ".sdd").mkdir()
         (tmp_path / ".sdd" / "current-spec").write_text(declared, encoding="utf-8")
+        if spec_touched:
+            # spec editada después de current-spec: avanzar mtime de la spec
+            future = time.time() + 2
+            spec_file = tmp_path / "specs" / "SPEC-001-x.md"
+            if spec_file.exists():
+                os.utime(spec_file, (future, future))
     return tmp_path
 
 
@@ -66,4 +75,17 @@ def test_allow_non_src_path(tmp_path: Path) -> None:
 def test_allow_when_no_file_path(tmp_path: Path) -> None:
     repo = _repo(tmp_path, declared=None)
     allow, _ = decide({"tool_name": "Bash", "tool_input": {}}, repo)
+    assert allow is True
+
+
+def test_block_src_when_spec_not_touched(tmp_path: Path) -> None:
+    repo = _repo(tmp_path, declared="SPEC-001-x\n", spec_touched=False)
+    allow, reason = decide(_payload(repo, "src/x.py"), repo)
+    assert allow is False
+    assert "no fueron editadas" in reason
+
+
+def test_allow_src_when_spec_touched(tmp_path: Path) -> None:
+    repo = _repo(tmp_path, declared="SPEC-001-x\n", spec_touched=True)
+    allow, _ = decide(_payload(repo, "src/x.py"), repo)
     assert allow is True

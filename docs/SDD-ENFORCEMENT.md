@@ -16,13 +16,13 @@ El enforcement es defensa en profundidad. Ninguna capa sola alcanza.
 
 | Capa | Cuándo actúa | Qué hace | Determinista |
 |------|--------------|----------|--------------|
-| **Hook de autoría** (`tools/sdd_gate.py` vía `PreToolUse`) | Antes de editar `src/` | Bloquea la edición si no hay spec vigente declarada | Sí |
+| **Hook de autoría** (`tools/sdd_gate.py` vía `PreToolUse`) | Antes de editar `src/` | Bloquea la edición si no hay spec vigente declarada o si la spec no fue editada después de declararla (chequeo de mtime) | Sí |
 | **Backstop del pipeline** (`tools/check_traceability.py`) | `bash tools/pipeline_local.sh` | Verifica integridad estructural y de cobertura de todas las specs | Sí |
 | **Detección semántica** (skills `/clarify`, `/analyze`) | A pedido, durante la redacción | Detecta US/FR faltantes, ambigüedades, gaps de cobertura | No (LLM) |
 
 ### Por qué tres y no una
 
-- El **hook** previene (es el único punto *anterior* a que el código exista), pero solo gobierna la ruta del asistente y solo verifica *presencia* de spec.
+- El **hook** previene (es el único punto *anterior* a que el código exista), pero solo gobierna la ruta del asistente. Verifica *presencia* de spec y que haya sido *editada* después de declararla (mtime), pero no juzga si el contenido es adecuado.
 - El **check** es el backstop determinista; corre sobre todo el repo, pero es *a posteriori*.
 - Las **skills** aportan el juicio de *adecuación* que ningún script puede dar, pero son probabilísticas y salteables.
 
@@ -38,6 +38,7 @@ de declaración en la raíz del proyecto:
 - **`.sdd/current-spec`** MUST contener el ID de la spec que gobierna el trabajo en curso (ej. `SPEC-006-batch-suite`), una por línea.
 - Antes de editar `src/`, el autor (humano o asistente) MUST declarar ahí la `SPEC-NNN`.
 - El hook valida que el ID exista en `specs/` y esté registrado en `specs/SPECS_REGISTRY.md`. Si falta o es inválido, **bloquea** la edición con un mensaje accionable.
+- **Chequeo de mtime**: además de existir, al menos una spec declarada MUST haber sido editada *después* de escribir `current-spec` (comparación `mtime(specs/SPEC-NNN.md) > mtime(.sdd/current-spec)`). Esto impide declarar una spec y saltar directo a codear sin actualizarla primero. El flujo obligado es: declarar → editar la spec (agregar/actualizar FR) → editar `src/`.
 - Cambios de **framework/método** (que no tocan `src/`) no requieren declaración: el hook solo intercepta `src/`.
 
 ---

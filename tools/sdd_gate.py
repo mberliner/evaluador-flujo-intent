@@ -65,6 +65,19 @@ def _spec_is_valid(spec_id: str, repo_root: Path) -> bool:
     return spec_id in registry.read_text(encoding="utf-8")
 
 
+def _any_spec_touched_after_declaration(declared: list[str], repo_root: Path) -> bool:
+    """True si al menos una spec declarada fue editada después de .sdd/current-spec."""
+    decl_path = repo_root / ".sdd" / "current-spec"
+    if not decl_path.exists():
+        return False
+    decl_mtime = decl_path.stat().st_mtime
+    for spec_id in declared:
+        spec_file = repo_root / "specs" / f"{spec_id}.md"
+        if spec_file.exists() and spec_file.stat().st_mtime > decl_mtime:
+            return True
+    return False
+
+
 def decide(payload: dict[str, object], repo_root: Path) -> tuple[bool, str]:
     """Devuelve (permitir, motivo). Motivo solo es relevante cuando se bloquea."""
     tool_input = payload.get("tool_input")
@@ -87,6 +100,14 @@ def decide(payload: dict[str, object], repo_root: Path) -> tuple[bool, str]:
             "Edicion de src/ bloqueada (Principio V): spec(s) declarada(s) invalida(s): "
             f"{', '.join(invalid)}. Deben existir en specs/ y estar registradas en "
             "SPECS_REGISTRY.md."
+        )
+
+    if not _any_spec_touched_after_declaration(declared, repo_root):
+        return False, (
+            "Edicion de src/ bloqueada (Principio V): la(s) spec(s) declarada(s) "
+            f"({', '.join(declared)}) no fueron editadas despues de declararlas en "
+            ".sdd/current-spec. Edita la spec primero (agrega/actualiza el FR) y "
+            "luego edita src/."
         )
     return True, ""
 
