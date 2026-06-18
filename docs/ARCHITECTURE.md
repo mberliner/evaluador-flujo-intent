@@ -89,10 +89,10 @@ El veredicto de cualquier caso se obtiene extrayendo la respuesta del agente y c
 
 Este ADR es el **SSOT enumerativo** de los evaluadores del sistema (la `CONSTITUTION.md` principio III declara el invariante agnóstico y apunta aquí). La lista crece con cada perfil de agente bajo prueba ([[SPEC-011-agent-under-test]]):
 
-| Evaluador | Spec | Extracción | Match | Test |
-|---|---|---|---|---|
-| Clasificación | SPEC-003 | regex sobre la respuesta | clase detectada == clase esperada | `tests/unit/test_classification_evaluator.py` |
-| Traducción | SPEC-012 *(draft)* | `{form}` JSON de la respuesta | taxonomías exactas + completitud poblado/vacío; similaridad fuzzy **informativa** | `tests/unit/test_translation_evaluator.py` *(planificado)* |
+| Evaluador | Spec | Estado | Extracción | Match | Test |
+|---|---|---|---|---|---|
+| Clasificación | SPEC-003 | **implementado** | regex sobre la respuesta | clase detectada == clase esperada | `tests/unit/test_classification_evaluator.py` |
+| Traducción | SPEC-012 | **draft — sin implementar** | `{form}` JSON de la respuesta | taxonomías exactas + completitud poblado/vacío; similaridad fuzzy **informativa** | `tests/unit/test_translation_evaluator.py` *(se crea al implementar)* |
 
 Cada evaluador concreto cumple el puerto `Evaluator` y retorna el supertipo `EvaluatedResult` ([[SPEC-011-agent-under-test]]). Agregar un evaluador es agregar una fila a esta tabla, no enmendar la constitución.
 

@@ -32,8 +32,9 @@ El hook hace **obligatorio** correr el juicio; no lo reemplaza.
 
 ## Mecanismo de "spec vigente": `.sdd/current-spec`
 
-El repo no usa git, así que no hay "rama por feature". El sustituto es un archivo
-de declaración en la raíz del proyecto:
+El gate no asume git (diseñado para funcionar sin repositorio), así que no hay
+"rama por feature". El sustituto es un archivo de declaración en la raíz del
+proyecto:
 
 - **`.sdd/current-spec`** MUST contener el ID de la spec que gobierna el trabajo en curso (ej. `SPEC-006-batch-suite`), una por línea.
 - Antes de editar `src/`, el autor (humano o asistente) MUST declarar ahí la `SPEC-NNN`.
@@ -68,7 +69,7 @@ MUST quedar en las skills (`/analyze`, `/clarify`) y en la revisión humana.
 ## Follow-up registrado
 
 - **FR→test estricto**: hoy las celdas de `Coverage mapping` son prosa. El check valida "todo FR aparece en el mapping" + "paths `tests/...py` referenciados existen", pero no exige que cada FR nombre un nodo de test concreto. El mapeo estricto FR→nodo requeriría **endurecer `docs/SPEC-FORMAT.md`** (celdas con identificadores de test) y migrar las tablas de las specs existentes. Diferido.
-- **`git init`**: habilitaría un backstop de `pre-commit` además del hook (que solo cubre la ruta del asistente). Deuda de entorno registrada en `historial/sdd.md`.
+- **`pre-commit` activo (desde 2026-06-14)**: el repo está bajo git con hooks de commit acotados a `^src/`. Esto complementa el hook del asistente (`sdd_gate.py`) con un backstop que cubre la ruta humana. El gate sigue siendo independiente de git por diseño.
 
 ---
 

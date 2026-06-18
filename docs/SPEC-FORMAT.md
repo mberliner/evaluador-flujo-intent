@@ -153,7 +153,7 @@ Narrativa + **Why this priority:** + **Independent Test:**
 - **YYYY-MM-DD** — [qué cambió y por qué]
 ```
 
-Referencia viva: [specs/SPEC-010-batch-trace.md](../specs/SPEC-010-batch-trace.md) es la primera spec redactada en este estándar.
+Referencia viva: [specs/SPEC-010-batch-trace.md](../specs/SPEC-010-batch-trace.md) es la primera spec creada originalmente en este estándar. [specs/SPEC-006-batch-suite.md](../specs/SPEC-006-batch-suite.md) es la referencia canónica de multi-HU con 3 User Stories (migrada a este estándar el 2026-05-27).
 
 ---
 
