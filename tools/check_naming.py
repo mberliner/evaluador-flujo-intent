@@ -1,12 +1,16 @@
 """Linter de nomenclatura agnostica.
 
 Implementa la verificacion automatica de specs/SPEC-000-naming.md:
-ningun identificador de Python en src/ puede contener tokens prohibidos
-que referencien proveedor, framework UI, formato de almacenamiento o
-protocolo de autenticacion.
+ningun identificador de Python en src/ o tests/ puede contener tokens
+prohibidos que referencien proveedor, framework UI, formato de
+almacenamiento o protocolo de autenticacion.
+
+En tests/ se relajan los tokens de formato (json, csv, etc.) porque los
+nombres de tests y helpers describen el escenario bajo prueba, no un
+acoplamiento a tecnologia.
 
 Uso:
-    python tools/check_naming.py src
+    python tools/check_naming.py src tests
 
 Exit code 0 si todo OK, 1 si hay violaciones.
 """
@@ -16,6 +20,8 @@ from __future__ import annotations
 import ast
 import sys
 from pathlib import Path
+
+FORMAT_TOKENS: frozenset[str] = frozenset({"csv", "json", "xml", "yaml", "parquet"})
 
 PROHIBITED_TOKENS: tuple[str, ...] = (
     # proveedor / plataforma
@@ -85,7 +91,11 @@ class _NameCollector(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def _violations_in_file(path: Path) -> list[tuple[Path, int, str, str]]:
+def _violations_in_file(
+    path: Path,
+    *,
+    relax_format: bool = False,
+) -> list[tuple[Path, int, str, str]]:
     source = path.read_text(encoding="utf-8")
     try:
         tree = ast.parse(source, filename=str(path))
@@ -101,13 +111,16 @@ def _violations_in_file(path: Path) -> list[tuple[Path, int, str, str]]:
             continue
         lowered = name.lower()
         for token in PROHIBITED_TOKENS:
+            if relax_format and token in FORMAT_TOKENS:
+                continue
             if token in lowered:
                 violations.append((path, lineno, name, token))
                 break
 
-    # Tambien revisamos el stem del archivo.
     stem_lowered = path.stem.lower()
     for token in PROHIBITED_TOKENS:
+        if relax_format and token in FORMAT_TOKENS:
+            continue
         if token in stem_lowered:
             violations.append((path, 0, path.name, token))
             break
@@ -117,17 +130,20 @@ def _violations_in_file(path: Path) -> list[tuple[Path, int, str, str]]:
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
-        print("Uso: check_naming.py <root>", file=sys.stderr)
+        print("Uso: check_naming.py <root> [<root> ...]", file=sys.stderr)
         return 2
 
-    root = Path(argv[1])
-    if not root.exists():
-        print(f"No existe: {root}", file=sys.stderr)
-        return 2
+    roots = [Path(a) for a in argv[1:]]
+    for root in roots:
+        if not root.exists():
+            print(f"No existe: {root}", file=sys.stderr)
+            return 2
 
     all_violations: list[tuple[Path, int, str, str]] = []
-    for path in root.rglob("*.py"):
-        all_violations.extend(_violations_in_file(path))
+    for root in roots:
+        relax = root.name == "tests"
+        for path in root.rglob("*.py"):
+            all_violations.extend(_violations_in_file(path, relax_format=relax))
 
     if not all_violations:
         return 0

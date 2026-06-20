@@ -50,7 +50,7 @@ step "trazabilidad SDD"    python tools/check_traceability.py specs
 step "ruff lint"           python -m ruff check src tests tools
 step "ruff format --check" python -m ruff format --check src tests tools
 step "mypy --strict"       python -m mypy --strict src
-step "naming agnostico"    python tools/check_naming.py src
+step "naming agnostico"    python tools/check_naming.py src tests
 step "lint-imports"        lint-imports
 
 # ── seguridad ─────────────────────────────────────────────────────────────────
