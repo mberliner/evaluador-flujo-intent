@@ -6,19 +6,28 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+  - repo: local
     hooks:
+      - id: sdd-gate
+        name: sdd-gate (spec-first, Principio V)
+        entry: python tools/sdd_gate.py
+        language: python
+        files: ^src/
+        pass_filenames: true
+
       - id: mypy
+        name: mypy --strict (src)
+        entry: mypy
+        language: python
         args: [--strict]
+        types: [python]
         files: ^src/
         additional_dependencies:
+          - mypy==2.1.0
           - types-requests
           - python-dotenv
           - streamlit
 
-  - repo: local
-    hooks:
       - id: naming-agnostic
         name: naming agnostico (SPEC-000-naming)
         entry: python tools/check_naming.py src

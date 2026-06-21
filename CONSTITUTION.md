@@ -54,4 +54,4 @@ Toda capacidad del **producto** está descrita por una spec registrada antes de 
   2. Registrar el cambio en `historial/sdd.md` (qué principio, por qué).
   3. Revisar los SSOTs referenciados por el principio afectado.
   4. Correr `python tools/check_constitution.py CONSTITUTION.md` y confirmar que pasa.
-- **Precedencia:** un principio constitucional prevalece sobre cualquier spec o decisión de implementación. El protocolo del agente (`CLAUDE.md`) referencia esta constitución, pero no la contiene: si se cambia de asistente, la constitución sigue vigente.
+- **Precedencia:** un principio constitucional prevalece sobre cualquier spec o decisión de implementación. El protocolo del agente (`AGENTS.md`, importado por `CLAUDE.md`) referencia esta constitución, pero no la contiene: si se cambia de asistente, la constitución sigue vigente.

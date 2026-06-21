@@ -198,7 +198,7 @@ Toda spec respeta **SPEC-000-naming**: los nombres de módulos, clases y funcion
 ### Coverage mapping
 
 - Cada FR y SC debe tener al menos una entrada en el coverage mapping.
-- **Una entrada en el mapping no es "un test por requisito".** La relación requisito ↔ verificador es muchos-a-muchos: un mismo test puede cubrir varios FR; un FR puede exigir varios artefactos (función + adaptador + tests); y un FR de **consistencia documental** o de **UI** se verifica por revisión cruzada o verificación funcional visual, no con `pytest`. La regla efectiva (CLAUDE.md) es: todo FR que describa **comportamiento ejecutable** MUST tener un test; los demás, una entrada de verificación trazable.
+- **Una entrada en el mapping no es "un test por requisito".** La relación requisito ↔ verificador es muchos-a-muchos: un mismo test puede cubrir varios FR; un FR puede exigir varios artefactos (función + adaptador + tests); y un FR de **consistencia documental** o de **UI** se verifica por revisión cruzada o verificación funcional visual, no con `pytest`. La regla efectiva (AGENTS.md) es: todo FR que describa **comportamiento ejecutable** MUST tener un test; los demás, una entrada de verificación trazable.
 - Actualizar el mapping cuando la implementación difiere de lo planeado.
 
 ### Estado y ciclo de vida

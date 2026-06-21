@@ -16,17 +16,49 @@ El enforcement es defensa en profundidad. Ninguna capa sola alcanza.
 
 | Capa | Cuándo actúa | Qué hace | Determinista |
 |------|--------------|----------|--------------|
-| **Hook de autoría** (`tools/sdd_gate.py` vía `PreToolUse`) | Antes de editar `src/` | Bloquea la edición si no hay spec vigente declarada o si la spec no fue editada después de declararla (chequeo de mtime) | Sí |
+| **Gate de autoría** (`tools/sdd_gate.py`) | Antes de editar/commitear `src/` | Bloquea si no hay spec vigente declarada o si la spec no fue editada después de declararla (chequeo de mtime) | Sí |
 | **Backstop del pipeline** (`tools/check_traceability.py`) | `bash tools/pipeline_local.sh` | Verifica integridad estructural y de cobertura de todas las specs | Sí |
-| **Detección semántica** (skills `/clarify`, `/analyze`) | A pedido, durante la redacción | Detecta US/FR faltantes, ambigüedades, gaps de cobertura | No (LLM) |
+| **Detección semántica** (playbooks `clarify`, `analyze`) | A pedido, durante la redacción | Detecta US/FR faltantes, ambigüedades, gaps de cobertura | No (LLM) |
 
 ### Por qué tres y no una
 
-- El **hook** previene (es el único punto *anterior* a que el código exista), pero solo gobierna la ruta del asistente. Verifica *presencia* de spec y que haya sido *editada* después de declararla (mtime), pero no juzga si el contenido es adecuado.
+- El **gate** previene (es el único punto *anterior* a que el código exista). Verifica *presencia* de spec y que haya sido *editada* después de declararla (mtime), pero no juzga si el contenido es adecuado.
 - El **check** es el backstop determinista; corre sobre todo el repo, pero es *a posteriori*.
-- Las **skills** aportan el juicio de *adecuación* que ningún script puede dar, pero son probabilísticas y salteables.
+- Los **playbooks** aportan el juicio de *adecuación* que ningún script puede dar, pero son probabilísticos y salteables.
 
-El hook hace **obligatorio** correr el juicio; no lo reemplaza.
+> **Portabilidad (agnóstico de asistente).** El procedimiento de cada playbook
+> es SSOT neutro en `docs/playbooks/{analyze,clarify}.md`. Cada asistente lo
+> *envuelve* sin duplicarlo: Claude Code vía `.claude/skills/{analyze,clarify}/SKILL.md`;
+> opencode vía `.opencode/command/{analyze,clarify}.md`; cualquier otro, pegando
+> el playbook como prompt. Editar el playbook actualiza todos los wrappers.
+
+El gate hace **obligatorio** correr el juicio; no lo reemplaza.
+
+---
+
+## El gate es multi-transporte (agnóstico de asistente)
+
+`tools/sdd_gate.py` separa la **decisión** (`decide()`, lógica pura) del
+**transporte** (cómo llega la ruta a evaluar). Acepta tres entradas con el mismo
+contrato de salida (exit 0 permite, exit 2 bloquea, stderr lleva el motivo):
+
+| Transporte | Quién lo usa | Wiring |
+|------------|--------------|--------|
+| **stdin JSON** | Claude Code (`PreToolUse`) | `.claude/settings.json` |
+| **argv** (`sdd_gate.py src/a.py …`) | `pre-commit` (capa git) y cualquier hook que pase rutas | `.pre-commit-config.yaml` (hook `sdd-gate`) |
+| **env** (`SDD_GATE_FILE=…`) | wrappers sin argv ni stdin | a definir por asistente |
+
+Esto vuelve el enforcement preventivo **independiente del asistente**:
+
+- **Claude Code** lo dispara antes de cada `Edit/Write` (más temprano, mejor UX).
+- **git** lo dispara en `pre-commit` sobre los `src/` *staged* — el sustrato
+  universal: cualquier asistente que commitee pasa por ahí, tenga hooks o no.
+- **opencode u otro**: un plugin puede invocar `sdd_gate.py <ruta>` y mapear su
+  exit code; si el asistente no tiene hooks preventivos, el `pre-commit` lo cubre
+  igual. El hook de Claude pasó de *garante* a *tripwire temprano opcional*.
+
+El exit 2 sirve a ambos mundos: Claude lo interpreta como "bloquear y devolver el
+motivo al asistente"; `pre-commit`/git lo interpreta como fallo → aborta el commit.
 
 ---
 
@@ -62,14 +94,14 @@ Ni el hook ni el check juzgan si la spec **describe bien** el cambio. Verifican
 que **exista** una spec gobernante y que las specs estén **bien formadas y
 cubiertas**. La pregunta "¿este cambio introduce un requisito nuevo sin FR?"
 —la que dejó pasar code-first el caso `run_id`— es un juicio de adecuación que
-MUST quedar en las skills (`/analyze`, `/clarify`) y en la revisión humana.
+MUST quedar en los playbooks (`analyze`, `clarify`) y en la revisión humana.
 
 ---
 
 ## Follow-up registrado
 
 - **FR→test estricto**: hoy las celdas de `Coverage mapping` son prosa. El check valida "todo FR aparece en el mapping" + "paths `tests/...py` referenciados existen", pero no exige que cada FR nombre un nodo de test concreto. El mapeo estricto FR→nodo requeriría **endurecer `docs/SPEC-FORMAT.md`** (celdas con identificadores de test) y migrar las tablas de las specs existentes. Diferido.
-- **`pre-commit` activo (desde 2026-06-14)**: el repo está bajo git con hooks de commit acotados a `^src/`. Esto complementa el hook del asistente (`sdd_gate.py`) con un backstop que cubre la ruta humana. El gate sigue siendo independiente de git por diseño.
+- **`pre-commit` corre el gate (desde 2026-06-21)**: el hook local `sdd-gate` ejecuta `tools/sdd_gate.py` sobre los `src/` *staged* (transporte argv), llevando el enforcement preventivo a la capa git — tool-agnóstica. El gate sigue funcionando *sin* git por diseño (vía `.sdd/current-spec` + el hook de Claude); pre-commit es una capa adicional, no un reemplazo.
 
 ---
 

@@ -40,7 +40,7 @@ Este archivo lista todas las specs vigentes del proyecto. Cada spec describe una
 - `proposito`: índice de navegación global — punto de entrada único para orientarse en documentación, código y SSOTs.
 - `ssot_level`: `operativo`
 - `incluye`:
-  - ruta de lectura recomendada con links a README, CLAUDE.md, SPECS_REGISTRY, ARCHITECTURE, CONTRIBUTING, DEVELOPMENT, PRODUCT
+  - ruta de lectura recomendada con links a README, AGENTS.md, SPECS_REGISTRY, ARCHITECTURE, CONTRIBUTING, DEVELOPMENT, PRODUCT
   - estructura del proyecto: tabla de directorios con su contenido (`src/`, `tests/`, `specs/`, `docs/`, `tools/`, `runs/`, `data/`, `historial/`)
   - mapa de SSOTs: tabla tema → archivo autoritativo
 - `excluye`:
@@ -48,7 +48,7 @@ Este archivo lista todas las specs vigentes del proyecto. Cada spec describe una
   - contenido duplicado de cualquier SSOT
 - `validacion`:
   - [ ] enlaces vigentes
-  - [ ] link a `CLAUDE.md` presente
+  - [ ] link a `AGENTS.md` presente
   - [ ] link a `specs/SPECS_REGISTRY.md` presente
   - [ ] sin duplicación de contenido de SSOTs
 

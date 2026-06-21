@@ -1,22 +1,31 @@
 """Interlock de autoria spec-first (Constitucion, Principio V).
 
-Hook `PreToolUse` de Claude Code: se invoca ANTES de un Edit/Write y bloquea la
-edicion de `src/` si no hay una spec vigente declarada en `.sdd/current-spec`.
-Es la unica capa de enforcement *anterior* a que el codigo exista (el repo no
-usa git, asi que no hay pre-commit). Solo gobierna la ruta del asistente; el
-backstop para edicion por fuera es `tools/check_traceability.py` en el pipeline.
+Gate de enforcement *anterior* a que el codigo exista: bloquea la edicion/commit
+de `src/` si no hay una spec vigente declarada en `.sdd/current-spec` (y editada
+despues de declararla). La logica de decision (`decide`) es agnostica de
+asistente; el modulo acepta tres transportes de entrada para ser invocable desde
+cualquier wrapper, no solo Claude Code:
 
-Protocolo: lee el JSON del tool call por stdin; exit 0 = permitir, exit 2 =
-bloquear (stderr se devuelve al asistente como motivo). Detalle del metodo en
-docs/SDD-ENFORCEMENT.md.
+1. **argv**: `python tools/sdd_gate.py src/a.py src/b.py` — usado por `pre-commit`
+   (capa git, tool-agnostica) y por cualquier hook que pase rutas como argumentos.
+2. **env**: `SDD_GATE_FILE=src/a.py python tools/sdd_gate.py`.
+3. **stdin JSON**: protocolo `PreToolUse` de Claude Code (retro-compatible) —
+   lee el JSON del tool call por stdin.
 
-Uso (configurado como hook en .claude/settings.json):
-    python tools/sdd_gate.py
+Contrato de salida (comun a los tres): exit 0 = permitir, exit 2 = bloquear
+(stderr lleva el motivo). El exit 2 sirve tanto a Claude (bloquea y devuelve el
+motivo al asistente) como a `pre-commit`/git (cualquier exit != 0 aborta el
+commit). Backstop a posteriori: `tools/check_traceability.py` en el pipeline.
+Detalle del metodo en docs/SDD-ENFORCEMENT.md.
+
+Wiring: hook `PreToolUse` en `.claude/settings.json` (stdin) y hook local en
+`.pre-commit-config.yaml` (argv).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -112,20 +121,45 @@ def decide(payload: dict[str, object], repo_root: Path) -> tuple[bool, str]:
     return True, ""
 
 
-def main() -> int:
+def _payloads_from_paths(paths: list[str], cwd: str) -> list[dict[str, object]]:
+    """Construye un payload por ruta (transporte argv/env)."""
+    return [{"tool_input": {"file_path": p}, "cwd": cwd} for p in paths]
+
+
+def _payloads_from_stdin() -> list[dict[str, object]]:
+    """Lee el payload JSON del tool call de Claude Code por stdin."""
     raw = sys.stdin.read()
     try:
         payload = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError:
         payload = {}
-    if not isinstance(payload, dict):
-        payload = {}
+    return [payload] if isinstance(payload, dict) else [{}]
 
-    allow, reason = decide(payload, _find_repo_root(payload))
-    if allow:
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    cwd = os.getcwd()
+
+    env_file = os.environ.get("SDD_GATE_FILE")
+    if args:
+        payloads = _payloads_from_paths(args, cwd)
+    elif env_file:
+        payloads = _payloads_from_paths([env_file], cwd)
+    elif sys.stdin.isatty():
+        # Sin rutas ni payload por stdin: nada que evaluar.
         return 0
-    print(reason, file=sys.stderr)
-    return 2
+    else:
+        payloads = _payloads_from_stdin()
+
+    reasons: list[str] = []
+    for payload in payloads:
+        allow, reason = decide(payload, _find_repo_root(payload))
+        if not allow and reason:
+            reasons.append(reason)
+    if reasons:
+        print("\n".join(reasons), file=sys.stderr)
+        return 2
+    return 0
 
 
 if __name__ == "__main__":

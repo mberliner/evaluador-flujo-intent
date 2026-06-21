@@ -1,24 +1,23 @@
----
-description: Detecta áreas subespecificadas en una spec y hace hasta 5 preguntas dirigidas, escribiendo las respuestas en la propia spec.
-argument-hint: <SPEC-NNN-slug> (o vacío para la spec declarada en .sdd/current-spec)
-allowed-tools: Read, Grep, Glob, Edit
----
+# Playbook: reducir ambigüedad de una spec antes de implementar (`clarify`)
 
-# /clarify — reducir ambigüedad de una spec antes de implementar
+> **SSOT neutro, agnóstico de asistente.** Este archivo es la fuente del
+> procedimiento. Los wrappers por-asistente (`.claude/skills/clarify/SKILL.md`,
+> `.opencode/command/clarify.md`, o un prompt pegado a mano) solo lo invocan;
+> no duplican su contenido. Editá aquí para cambiar el comportamiento en todos.
 
 Adaptado de GitHub Spec Kit (`/speckit.clarify`) a este proyecto. Se ejecuta
-ANTES de codear (Principio V). Es la contraparte interactiva de `/analyze`:
+ANTES de codear (Principio V). Es la contraparte interactiva de `analyze`:
 detecta huecos y los resuelve grabando las respuestas en la spec.
 
 ## Entrada
 
-Spec objetivo: `$ARGUMENTS`. Si está vacío, usá la primera SPEC de
-`.sdd/current-spec`. Si no hay, pedí el ID y detené. Si el archivo no existe,
-indicá crear la spec primero (no la crees aquí).
+Spec objetivo: el ID que pase el invocador. Si no se pasa ninguno, usá la
+primera SPEC de `.sdd/current-spec`. Si no hay, pedí el ID y detené. Si el
+archivo no existe, indicá crear la spec primero (no la crees aquí).
 
 ## Pasos
 
-1. **Escaneo de ambigüedad** sobre `specs/$ARGUMENTS.md` usando esta taxonomía;
+1. **Escaneo de ambigüedad** sobre `specs/<SPEC-ID>.md` usando esta taxonomía;
    marcá cada categoría como Clara / Parcial / Ausente:
    - Alcance funcional y comportamiento; out-of-scope explícito; roles.
    - Modelo de datos: entidades, atributos, **reglas de identidad y unicidad**, ciclo de vida, supuestos de volumen/escala.
@@ -37,17 +36,17 @@ indicá crear la spec primero (no la crees aquí).
    comportamiento. Ordená por (Impacto × Incertidumbre).
 
 3. **Preguntas, una por vez** (no reveles las siguientes):
-   - Opción múltiple (2–5 opciones mutuamente excluyentes) con tu recomendación arriba, o respuesta corta (`<=5 palabras`).
+   - Opción múltiple (2–5 opciones mutuamente excluyentes) con tu recomendación arriba, o respuesta corta (`<=5 palabras`). Usá el mecanismo de pregunta interactiva del asistente si lo tiene; si no, presentá la pregunta y esperá la respuesta.
    - Validá la respuesta antes de avanzar.
 
 4. **Integración tras cada respuesta aceptada**:
    - Asegurá una sección `## Clarifications` con un subtítulo `### Session YYYY-MM-DD`.
    - Agregá `- Q: <pregunta> → A: <respuesta>`.
    - Aplicá la aclaración a la sección correspondiente (Functional Requirements, Success Criteria como métrica, Edge Cases, etc.). Si convierte un requisito implícito en explícito, **agregá el `FR-NNN` correspondiente** (esto es lo que previene el antipatrón `run_id`).
-   - Guardá la spec tras cada integración (Edit).
+   - Guardá la spec tras cada integración.
 
 5. **Cierre**: número de preguntas, secciones tocadas, y si quedan categorías
-   sin resolver, recomendá re-correr `/clarify` o `/analyze`.
+   sin resolver, recomendá re-correr `clarify` o `analyze`.
 
 ## Reglas
 

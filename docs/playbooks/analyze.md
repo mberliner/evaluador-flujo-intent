@@ -1,30 +1,30 @@
----
-description: Análisis read-only de consistencia y cobertura de una spec contra tests, registro y constitución (capa semántica del Principio V).
-argument-hint: <SPEC-NNN-slug> (o vacío para la spec declarada en .sdd/current-spec)
-allowed-tools: Read, Grep, Glob
----
+# Playbook: análisis de adecuación de una spec (`analyze`)
 
-# /analyze — análisis de adecuación de una spec
+> **SSOT neutro, agnóstico de asistente.** Este archivo es la fuente del
+> procedimiento. Los wrappers por-asistente (`.claude/skills/analyze/SKILL.md`,
+> `.opencode/command/analyze.md`, o un prompt pegado a mano) solo lo invocan;
+> no duplican su contenido. Editá aquí para cambiar el comportamiento en todos.
 
 Adaptado de GitHub Spec Kit (`/speckit.analyze`) a la estructura de este
 proyecto. Complementa a `tools/check_traceability.py`: ese check es
 **determinista** (estructura, consistencia registro, FR sin cobertura); este
-comando aporta el juicio **semántico** de *adecuación* que un script no puede
-dar. Ver `docs/SDD-ENFORCEMENT.md`.
+procedimiento aporta el juicio **semántico** de *adecuación* que un script no
+puede dar. Ver `docs/SDD-ENFORCEMENT.md`.
+
+## Entrada
+
+Spec objetivo: el ID que pase el invocador (ej. `SPEC-006-batch-suite`). Si no
+se pasa ninguno, usá la primera SPEC declarada en `.sdd/current-spec`. Si no hay
+ninguna, pedí el ID al usuario y detené.
 
 ## Operación
 
 **ESTRICTAMENTE READ-ONLY**: no modifiques ningún archivo. Producí un reporte.
 
-## Entrada
-
-Spec objetivo: `$ARGUMENTS`. Si está vacío, leé la primera SPEC declarada en
-`.sdd/current-spec`. Si no hay ninguna, pedí al usuario el ID y detené.
-
 ## Pasos
 
 1. **Cargar artefactos** (solo lo necesario):
-   - La spec `specs/$ARGUMENTS.md`: User Stories, Functional Requirements (`FR-NNN`), Success Criteria (`SC-NNN`), Coverage mapping, Edge Cases.
+   - La spec `specs/<SPEC-ID>.md`: User Stories, Functional Requirements (`FR-NNN`), Success Criteria (`SC-NNN`), Coverage mapping, Edge Cases.
    - `specs/SPECS_REGISTRY.md`: estado y formato de la spec.
    - `CONSTITUTION.md`: los 5 principios (para validar conflictos).
    - `tests/`: tests que cubren la capacidad (buscá por nombre/keywords y por las referencias del Coverage mapping).
@@ -48,8 +48,8 @@ Spec objetivo: `$ARGUMENTS`. Si está vacío, leé la primera SPEC declarada en
    **LOW** (redacción).
 
    Cerrá con: total de FR, % con test, conteo de ambigüedades, issues CRITICAL,
-   y "Próximas acciones" (qué resolver antes de implementar; sugerí `/clarify` si
-   hay ambigüedades de alto impacto).
+   y "Próximas acciones" (qué resolver antes de implementar; sugerí correr el
+   playbook `clarify` si hay ambigüedades de alto impacto).
 
 ## Reglas
 

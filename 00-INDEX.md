@@ -4,7 +4,7 @@
 
 1. [README.md](README.md) — qué es el proyecto y cómo arrancarlo
 2. [CONSTITUTION.md](CONSTITUTION.md) — principios no-negociables del sistema (leer antes de diseñar)
-3. [CLAUDE.md](CLAUDE.md) — protocolo SDD para asistentes IA
+3. [AGENTS.md](AGENTS.md) — protocolo SDD para asistentes IA (SSOT; `CLAUDE.md` lo importa)
 4. [specs/SPECS_REGISTRY.md](specs/SPECS_REGISTRY.md) — specs vigentes y estado de cada capacidad
 5. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — capas y reglas de dependencia
 6. [docs/AGENT-INVOCATION.md](docs/AGENT-INVOCATION.md) — cómo conectarse al agente, flujo de mensajes y traza interna
@@ -25,6 +25,7 @@
 | `tests/integration/` | Tests con marker `smoke` que golpean el agente real |
 | `specs/` | Specs de comportamiento por capacidad (SPEC-NNN-*.md) |
 | `docs/` | Arquitectura, desarrollo, producto, contributing |
+| `docs/playbooks/` | Procedimientos LLM agnósticos de asistente (`analyze`, `clarify`); SSOT envuelto por skills de Claude y commands de opencode |
 | `tools/` | Utilidades de validación (check_naming, etc.) |
 | `schemas/` | Contratos de interfaz externos — versionados (ej. schema del agente) |
 | `runs/` | Salidas de ejecuciones — gitignored |
@@ -36,7 +37,7 @@
 | Tema | SSOT |
 |---|---|
 | Principios no-negociables del sistema | `CONSTITUTION.md` |
-| Protocolo del agente (asistentes IA) | `CLAUDE.md` (`AGENTS.md` apunta aquí) |
+| Protocolo del agente (asistentes IA) | `AGENTS.md` (`CLAUDE.md` lo importa vía `@AGENTS.md`) |
 | Specs de comportamiento | `specs/SPECS_REGISTRY.md` |
 | Arquitectura | `docs/ARCHITECTURE.md` |
 | Conexión y flujo de mensajes del agente | `docs/AGENT-INVOCATION.md` |

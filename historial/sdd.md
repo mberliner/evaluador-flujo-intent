@@ -4,6 +4,35 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-06-21 — Universalización del SDD: agnóstico de asistente (Claude/opencode/…)
+
+**Scope cerrado (método/framework; no toca `src/` ni el producto). Toca instrucciones del agente, capa semántica y gate de autoría.**
+
+Objetivo: que el SDD funcione en cualquier asistente IA (ej. opencode), no solo Claude Code. Diagnóstico previo: la *verdad* (specs, checks deterministas, pipeline, `.sdd/current-spec`) ya era agnóstica; lo acoplado eran tres *adaptadores* — instrucciones, comandos y el hook preventivo. Se extrajeron los tres sin perder el cableado de Claude.
+
+**Decisiones tomadas:**
+
+- **#1 — `AGENTS.md` es ahora el SSOT del protocolo del agente** (antes solo apuntaba a `CLAUDE.md`). Se invirtió la dirección: el contenido vive en `AGENTS.md` (estándar de facto que auto-cargan opencode/Cursor/Codex/Aider/Gemini) y `CLAUDE.md` se reduce a `@AGENTS.md` (import nativo de Claude → contenido en contexto, cero salto). Asimetría que lo justifica: Claude puede importar `AGENTS.md`, pero ningún otro asistente puede importar `CLAUDE.md`. Referencias actualizadas en `00-INDEX.md`, `CONSTITUTION.md`, `docs/SPEC-FORMAT.md`, `specs/SPECS_REGISTRY.md`.
+- **#3 — `analyze`/`clarify` portados a cuerpo neutro + wrappers finos.** El procedimiento (juicio LLM, no scriptificable) pasó a SSOT neutro en `docs/playbooks/{analyze,clarify}.md` (sin frontmatter ni `$ARGUMENTS`). Wrappers que solo aportan binding propietario: `.claude/skills/{analyze,clarify}/SKILL.md` (Claude, `clarify` liga `AskUserQuestion`) y `.opencode/command/{analyze,clarify}.md` (opencode). Se eliminaron `.claude/commands/{analyze,clarify}.md`. Decisión de diseño: las skills/commands **no** son estándar cross-asistente; la portabilidad viene de la *neutralidad del cuerpo*, no del tipo de wrapper.
+- **#2 — `sdd_gate.py` multi-transporte + capa git, hook de Claude conservado (retro-compatible, a pedido del usuario).** `main()` acepta argv → env (`SDD_GATE_FILE`) → stdin JSON; `decide()` quedó intacta (ya era pura). Nuevo hook local `sdd-gate` en `.pre-commit-config.yaml` (transporte argv sobre `^src/` staged): lleva el enforcement preventivo a la capa git, el sustrato universal. El hook `PreToolUse` de Claude pasa de *garante* a *tripwire temprano opcional*. Contrato común exit 0/2 (sirve a Claude y a git).
+
+**Verificación end-to-end (real, no solo unit):**
+
+- pre-commit real (`pre-commit run sdd-gate`): bloquea sin spec, permite con spec declarada+editada, bloquea por mtime, bloquea por spec inexistente.
+- Hook de Claude en vivo: `Write` a `src/streamlit.py` bloqueado (exit 2), archivo no creado.
+- 8 tests del gate + pipeline local 9/9 verdes. Working tree sin cambios colaterales.
+
+**Sin cambio de comportamiento del producto:** solo método. No requiere spec nueva (el gate solo intercepta `src/`; este cambio no lo toca).
+
+**Deuda arrastrada:** (1) plugin de opencode para el gate (`tool.execute.before` → `sdd_gate.py`) no implementado — no había opencode en el entorno para verificarlo; el `pre-commit` ya cubre esa ruta. (2) Wrappers de opencode escritos contra la convención documentada (`.opencode/command/`), sin ejecutar para confirmar carga.
+
+**[SDD-Check] — 2026-06-21 (universalización del SDD)**
+- Specs leídas: SPECS_REGISTRY, CONSTITUTION.md, SPEC-000-naming, AGENTS.md (ex-CLAUDE.md), docs/SDD-ENFORCEMENT.md, docs/SPEC-FORMAT.md.
+- Includes/excludes verificados: cambio acotado a método/framework (no `src/`, no producto); hook de Claude intacto; pre-commit `sdd-gate` restringido a `^src/`; los tres transportes del gate dan el mismo veredicto (exit 2 al bloquear).
+- SSOTs afectados: protocolo del agente (`AGENTS.md`, `CLAUDE.md`→`@AGENTS.md`), capa semántica (`docs/playbooks/`, wrappers `.claude/skills/` y `.opencode/command/`), enforcement (`tools/sdd_gate.py`, `.pre-commit-config.yaml`, `docs/SDD-ENFORCEMENT.md`), `00-INDEX.md`, `CONSTITUTION.md`, `docs/SPEC-FORMAT.md`, `specs/SPECS_REGISTRY.md`, historial/sdd.md.
+
+---
+
 ## 2026-06-16 — Aclaración de método: FR↔SC y cobertura no son 1 a 1
 
 **Scope cerrado (método de redacción de specs; toca solo `docs/SPEC-FORMAT.md`):**
