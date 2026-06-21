@@ -18,8 +18,9 @@ motivo al asistente) como a `pre-commit`/git (cualquier exit != 0 aborta el
 commit). Backstop a posteriori: `tools/check_traceability.py` en el pipeline.
 Detalle del metodo en docs/SDD-ENFORCEMENT.md.
 
-Wiring: hook `PreToolUse` en `.claude/settings.json` (stdin) y hook local en
-`.pre-commit-config.yaml` (argv).
+Wiring: hook `PreToolUse` en `.claude/settings.json` (stdin), hook local en
+`.pre-commit-config.yaml` (argv) y plugin de opencode en
+`.opencode/plugin/sdd-gate.js` (`tool.execute.before`, argv).
 """
 
 from __future__ import annotations

@@ -45,7 +45,7 @@ contrato de salida (exit 0 permite, exit 2 bloquea, stderr lleva el motivo):
 | Transporte | Quién lo usa | Wiring |
 |------------|--------------|--------|
 | **stdin JSON** | Claude Code (`PreToolUse`) | `.claude/settings.json` |
-| **argv** (`sdd_gate.py src/a.py …`) | `pre-commit` (capa git) y cualquier hook que pase rutas | `.pre-commit-config.yaml` (hook `sdd-gate`) |
+| **argv** (`sdd_gate.py src/a.py …`) | `pre-commit` (capa git), opencode (plugin) y cualquier hook que pase rutas | `.pre-commit-config.yaml` (hook `sdd-gate`); `.opencode/plugin/sdd-gate.js` (hook `tool.execute.before`) |
 | **env** (`SDD_GATE_FILE=…`) | wrappers sin argv ni stdin | a definir por asistente |
 
 Esto vuelve el enforcement preventivo **independiente del asistente**:
@@ -53,9 +53,11 @@ Esto vuelve el enforcement preventivo **independiente del asistente**:
 - **Claude Code** lo dispara antes de cada `Edit/Write` (más temprano, mejor UX).
 - **git** lo dispara en `pre-commit` sobre los `src/` *staged* — el sustrato
   universal: cualquier asistente que commitee pasa por ahí, tenga hooks o no.
-- **opencode u otro**: un plugin puede invocar `sdd_gate.py <ruta>` y mapear su
-  exit code; si el asistente no tiene hooks preventivos, el `pre-commit` lo cubre
-  igual. El hook de Claude pasó de *garante* a *tripwire temprano opcional*.
+- **opencode**: el plugin `.opencode/plugin/sdd-gate.js` intercepta las tools
+  `edit`/`write` (`tool.execute.before`), invoca `sdd_gate.py <ruta>` por argv y
+  aborta la edición si el exit es 2 — paridad con el `PreToolUse` de Claude. Si un
+  asistente no tuviera hooks preventivos, el `pre-commit` lo cubre igual. El hook
+  del asistente pasó de *garante* a *tripwire temprano*.
 
 El exit 2 sirve a ambos mundos: Claude lo interpreta como "bloquear y devolver el
 motivo al asistente"; `pre-commit`/git lo interpreta como fallo → aborta el commit.
@@ -102,6 +104,7 @@ MUST quedar en los playbooks (`analyze`, `clarify`) y en la revisión humana.
 
 - **FR→test estricto**: hoy las celdas de `Coverage mapping` son prosa. El check valida "todo FR aparece en el mapping" + "paths `tests/...py` referenciados existen", pero no exige que cada FR nombre un nodo de test concreto. El mapeo estricto FR→nodo requeriría **endurecer `docs/SPEC-FORMAT.md`** (celdas con identificadores de test) y migrar las tablas de las specs existentes. Diferido.
 - **`pre-commit` corre el gate (desde 2026-06-21)**: el hook local `sdd-gate` ejecuta `tools/sdd_gate.py` sobre los `src/` *staged* (transporte argv), llevando el enforcement preventivo a la capa git — tool-agnóstica. El gate sigue funcionando *sin* git por diseño (vía `.sdd/current-spec` + el hook de Claude); pre-commit es una capa adicional, no un reemplazo.
+- **opencode dispara el gate (desde 2026-06-21)**: el plugin `.opencode/plugin/sdd-gate.js` (`tool.execute.before`) invoca `tools/sdd_gate.py` por argv antes de cada `edit`/`write` y aborta si el exit es 2 — cierra la asimetría con el `PreToolUse` de Claude. Se versiona como `.js` sin imports de runtime (opencode inyecta `$`/`directory`), coherente con `.opencode/.gitignore` que no versiona `node_modules`.
 
 ---
 

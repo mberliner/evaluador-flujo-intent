@@ -4,6 +4,36 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-06-21 — Gate SDD cableado en opencode (cierra deuda #1 de la universalización)
+
+**Scope cerrado (método/framework; no toca `src/` ni el producto). Toca el adaptador preventivo de opencode.**
+
+Objetivo: cerrar la asimetría que dejó la universalización del SDD — Claude disparaba el gate en `PreToolUse`, opencode no tenía hook preventivo y dependía solo del `pre-commit`. Resuelve la **deuda arrastrada #1** de la entrada de universalización (plugin de opencode no implementado por no haber opencode en el entorno).
+
+**Decisiones tomadas:**
+
+- **Plugin `.opencode/plugin/sdd-gate.js`** que engancha `tool.execute.before`, filtra las tools `edit`/`write`, e invoca `tools/sdd_gate.py <filePath>` por **transporte argv** (el ya existente; `decide()` y el resto del gate intactos). Exit 2 → `throw` que aborta la edición y propaga el motivo. Paridad funcional con el `PreToolUse` de Claude.
+- **`.js` sin imports de runtime** (solo `node:fs`/`node:path`, built-in de Bun). Razón: `.opencode/.gitignore` no versiona `node_modules`/`package.json`, así que el paquete `@opencode-ai/plugin` no existe en un clone limpio; un `import type` lo referenciaría innecesariamente. El plugin se versiona y corre sin `npm install`. Coherente con cómo el repo ya trata `.opencode/` (solo `command/*.md` versionados).
+- **Sin gates nuevos.** El resto de checks (mypy, naming, import-linter, ruff) ya corren en la capa git/pre-commit (agnóstica) y protegen a opencode igual; los whole-repo (`check_constitution`, `check_traceability`, `schema_drift`) son de pipeline/CI, no encajan en un hook por-archivo. El único `PreToolUse` que Claude tenía y opencode no era `sdd_gate` — con esto quedan a la par.
+
+**Verificación end-to-end (real, no solo unit):**
+
+- Gate por argv: bloquea `src/` sin spec (exit 2), permite fuera de `src/` (exit 0).
+- Sintaxis del plugin OK (`node --check`); `.opencode/plugin/` trackeado por git.
+- **E2E en opencode real: OK** (intercepta y aborta la edición de `src/`).
+- Pipeline local 9/9 verde (con `.venv/bin/python` en PATH).
+
+**Sin cambio de comportamiento del producto:** solo método/adaptador. No requiere spec (el gate solo intercepta `src/`; este cambio no lo toca).
+
+**Deuda arrastrada:** ninguna nueva. El pipeline (`tools/pipeline_local.sh`) asume `python` en PATH; en este entorno solo existe `.venv/bin/python` → requiere activar el venv. Detalle de entorno, no del cambio.
+
+**[SDD-Check] — 2026-06-21 (gate en opencode)**
+- Specs leídas: ninguna de producto (cambio de método); docs/SDD-ENFORCEMENT.md, AGENTS.md, tools/sdd_gate.py.
+- Includes/excludes verificados: cambio acotado a método (no `src/`, no producto); plugin restringido a tools `edit`/`write` sobre `filePath`; reutiliza el transporte argv ya existente (mismo veredicto exit 0/2 que Claude y pre-commit).
+- SSOTs afectados: enforcement (`.opencode/plugin/sdd-gate.js` nuevo, `tools/sdd_gate.py` docstring, `docs/SDD-ENFORCEMENT.md`), historial/sdd.md.
+
+---
+
 ## 2026-06-21 — Universalización del SDD: agnóstico de asistente (Claude/opencode/…)
 
 **Scope cerrado (método/framework; no toca `src/` ni el producto). Toca instrucciones del agente, capa semántica y gate de autoría.**
