@@ -53,11 +53,27 @@ Esto vuelve el enforcement preventivo **independiente del asistente**:
 - **Claude Code** lo dispara antes de cada `Edit/Write` (más temprano, mejor UX).
 - **git** lo dispara en `pre-commit` sobre los `src/` *staged* — el sustrato
   universal: cualquier asistente que commitee pasa por ahí, tenga hooks o no.
-- **opencode**: el plugin `.opencode/plugin/sdd-gate.js` intercepta las tools
-  `edit`/`write` (`tool.execute.before`), invoca `sdd_gate.py <ruta>` por argv y
-  aborta la edición si el exit es 2 — paridad con el `PreToolUse` de Claude. Si un
-  asistente no tuviera hooks preventivos, el `pre-commit` lo cubre igual. El hook
-  del asistente pasó de *garante* a *tripwire temprano*.
+- **opencode**: el plugin `.opencode/plugin/sdd-gate.js` intercepta las tools de
+  **escritura** (`edit`, `write`, `multiedit`, `apply_patch` y variantes de
+  patch) en `tool.execute.before`, extrae **todas** las rutas que tocarían (de
+  las claves `filePath`/`path` y parseando las cabeceras de patch estilo Codex
+  `*** Add|Update|Delete File:` / `*** Move to:`), las normaliza a absolutas
+  bajo `src/` y invoca `sdd_gate.py <ruta-absoluta>` por argv por cada una,
+  abortando si el exit es 2 — paridad con el `PreToolUse` de Claude. Las rutas
+  del patch son relativas al cwd de la tool, que la API NO expone al hook
+  (`tool.execute.before` solo trae tool/sessionID/callID): si una relativa no
+  cae en `src/` contra el root pero existe al resolverla bajo `src/`, se asume
+  cwd interno a `src/` y se pasa la absoluta (si no, el gate la resolvería contra
+  el root y se le escaparía). La *creación* de un archivo nuevo en `src/` con cwd
+  interno a `src/` no es determinista aquí y la cubre el `pre-commit`. Es **fail-closed**: prueba intérpretes en orden
+  (`.venv` → `python` → `python3`) y, si ninguno logra ejecutar el gate (exit ≠ 0
+  y ≠ 2, p. ej. Python ausente o el alias stub de la Microsoft Store),
+  **bloquea** en vez de permitir silenciosamente. La ruta llega en `input.args`
+  (shape del runtime), no en `output.args` (lo que sugieren los tipos `.d.ts`);
+  el plugin lee de ambos por robustez. Enganchar por nombre de tool es una
+  allowlist (las tools de lectura no disparan el gate); las tools de escritura no
+  contempladas las cubre el `pre-commit`. El hook del asistente pasó de *garante*
+  a *tripwire temprano*.
 
 El exit 2 sirve a ambos mundos: Claude lo interpreta como "bloquear y devolver el
 motivo al asistente"; `pre-commit`/git lo interpreta como fallo → aborta el commit.
