@@ -40,6 +40,7 @@
 | Principios no-negociables del sistema | `CONSTITUTION.md` |
 | Protocolo del agente (asistentes IA) | `AGENTS.md` (`CLAUDE.md` lo importa vía `@AGENTS.md`) |
 | Specs de comportamiento | `specs/SPECS_REGISTRY.md` |
+| Ideas sin formalizar (pre-spec) | `docs/IDEAS.md` |
 | Arquitectura | `docs/ARCHITECTURE.md` |
 | Conexión y flujo de mensajes del agente | `docs/AGENT-INVOCATION.md` |
 | Setup y comandos | `docs/DEVELOPMENT.md` |
