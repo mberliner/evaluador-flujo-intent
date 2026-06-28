@@ -2,9 +2,9 @@
 name: clarify
 description: Detecta áreas subespecificadas en una spec y hace hasta 5 preguntas dirigidas, grabando las respuestas en la propia spec (capa semántica del Principio V). Usar antes de implementar cuando una SPEC-NNN tiene ambigüedades de impacto.
 allowed-tools: Read, Grep, Glob, Edit, AskUserQuestion
+opencode-description: Desambigua una spec con hasta 5 preguntas y graba las respuestas en ella (Principio V).
+opencode-constraint: "Hacé las preguntas una por vez; editás la spec, nunca `src/`."
 ---
-
-<!-- GENERADO por tools/gen_skill_adapters.py desde .agents/skills/clarify/SKILL.md — NO EDITAR A MANO -->
 
 # clarify — adaptador del playbook de desambiguación de specs
 

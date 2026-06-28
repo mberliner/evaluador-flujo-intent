@@ -25,7 +25,8 @@
 | `tests/integration/` | Tests con marker `smoke` que golpean el agente real |
 | `specs/` | Specs de comportamiento por capacidad (SPEC-NNN-*.md) |
 | `docs/` | Arquitectura, desarrollo, producto, contributing |
-| `docs/playbooks/` | Procedimientos LLM agnósticos de asistente (`analyze`, `clarify`); SSOT envuelto por skills de Claude y commands de opencode |
+| `docs/playbooks/` | Procedimientos LLM agnósticos de asistente (`analyze`, `clarify`); SSOT del contenido de cada skill |
+| `.agents/skills/` | SSOT del wrapper de cada skill (`SKILL.md`); lo leen Codex y Antigravity directo, y genera los adaptadores de Claude/opencode (ver `docs/SKILLS-MULTITOOL.md`) |
 | `tools/` | Utilidades de validación (check_naming, etc.) |
 | `schemas/` | Contratos de interfaz externos — versionados (ej. schema del agente) |
 | `runs/` | Salidas de ejecuciones — gitignored |
@@ -47,5 +48,6 @@
 | Nomenclatura agnóstica | `specs/SPEC-000-naming.md` |
 | Formato y template de specs | `docs/SPEC-FORMAT.md` |
 | Enforcement de trazabilidad (Principio V) | `docs/SDD-ENFORCEMENT.md` |
+| Skills multi-asistente (Claude/Codex/Antigravity/opencode) | `docs/SKILLS-MULTITOOL.md` |
 | Historial de iteraciones | `historial/sdd.md` |
 | Schema del agente (contrato externo) | `schemas/FI_Orquestador_Input.schema.json` |

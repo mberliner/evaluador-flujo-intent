@@ -1,0 +1,6 @@
+# Adaptadores de skills generados por tools/gen_skill_adapters.py.
+# Forzamos LF para que `--check` sea determinista en Windows y Linux
+# (evita que autocrlf reescriba los EOL y dispare drift falso).
+.agents/skills/**/SKILL.md   text eol=lf
+.claude/skills/**/SKILL.md   text eol=lf
+.opencode/command/*.md       text eol=lf

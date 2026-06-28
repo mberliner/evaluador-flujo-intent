@@ -2,9 +2,9 @@
 name: analyze
 description: Análisis read-only de consistencia y cobertura de una spec contra tests, registro y constitución (capa semántica del Principio V). Usar antes de implementar una capacidad o cuando se pide auditar la adecuación de una SPEC-NNN.
 allowed-tools: Read, Grep, Glob
+opencode-description: Análisis read-only de adecuación de una spec (capa semántica del Principio V).
+opencode-constraint: "Read-only: producí el reporte en Markdown, no edites archivos."
 ---
-
-<!-- GENERADO por tools/gen_skill_adapters.py desde .agents/skills/analyze/SKILL.md — NO EDITAR A MANO -->
 
 # analyze — adaptador del playbook de adecuación de specs
 
