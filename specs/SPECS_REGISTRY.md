@@ -55,10 +55,7 @@ Este archivo lista todas las specs vigentes del proyecto. Cada spec describe una
 
 ## Política de datos
 
-Los datasets de entrada **no se versionan**. El detalle completo (referencias externas, `data/.gitkeep`) es SSOT en `docs/ARCHITECTURE.md` §ADR-002. Mapeo a specs: en cada ejecución el usuario carga los datos vía la interfaz —
-
-- **Modo simple**: un caso ingresado por pantalla (SPEC-001) o cargado desde archivo (SPEC-004).
-- **Modo batch** (SPEC-006): archivo de múltiples casos cargado por interfaz estable (file uploader del dashboard u otro mecanismo).
+Los datasets de entrada **no se versionan**; el detalle (referencias externas, mecanismo de carga, `data/.gitkeep`) es SSOT en `docs/ARCHITECTURE.md` §ADR-002. Mapeo spec↔modo: carga en modo simple por pantalla (SPEC-001) o archivo (SPEC-004); modo batch (SPEC-006).
 
 ## Roadmap de iteraciones
 

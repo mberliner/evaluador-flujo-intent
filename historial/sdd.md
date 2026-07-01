@@ -4,6 +4,34 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-07-01 — Auditoría de consistencia docs/specs (reconciliación documental)
+
+**Scope: solo documentación y specs; no toca `src/` ni el producto.** Barrido de contradicciones, redundancias, violaciones de SSOT y simplificaciones sobre la constitución, los documentos de método y las 14 specs registradas. 7 hallazgos, todos resueltos.
+
+**Bajo riesgo (sin decisión):**
+
+- **SPEC-002**: "Expone tres métodos" → enunciado sin conteo frágil (el puerto documenta 4 + `get_trace`).
+- **AGENTS.md**: la enumeración del pipeline omitía "trazabilidad SDD"; agregada (alinea con `docs/DEVELOPMENT.md` y `docs/SDD-ENFORCEMENT.md`).
+- **SPEC-013**: FR-008/FR-009 estaban fuera de orden en Functional Requirements y en Coverage mapping; reordenados.
+- **SPEC-000-naming**: un criterio citaba `_serializer` como excepción documentada inexistente en la tabla; removido.
+
+**Reconciliación spec↔código (verificada contra `src/domain/ports.py`):**
+
+- **Superficie del puerto `AgentClient` (#3)**: los 5 métodos reales estaban repartidos entre SPEC-002 (4) y SPEC-007 (`get_trace`) sin owner único. SPEC-002 §`domain/ports.py` pasa a ser SSOT de la interfaz (tabla método→owner).
+- **Puerto `CredentialProvider` (#4)**: existe en el código (`ports.py:67`, implementado por `TokenProvider`) y SPEC-011/013 lo citaban como "puerto existente", pero **ninguna spec lo gobernaba** — gap de trazabilidad (Principio V). Registrado en SPEC-002. *Hallazgo corregido al leer el código: no era abstracción inventada sino puerto huérfano de spec.*
+- **Redundancia de "Política de datos" (#7)**: `SPECS_REGISTRY.md` re-describía el mecanismo de carga ya SSOT en ADR-002; recortado a puntero + mapeo spec↔modo. PRODUCT.md ya enlazaba bien (sin cambios).
+
+**Sin cambio de comportamiento:** reconciliación documental; las specs `active` afectadas (SPEC-002, SPEC-000-naming) siguen coherentes con el código vigente. No requiere spec nueva (no se toca `src/`).
+
+**Deuda arrastrada:** la firma `send(form: dict)` (SPEC-002, vigente en código) sigue marcada para migrar a `send(input: AgentInput)` por SPEC-011 FR-014 / SPEC-013 FR-003 (drafts); reconciliación diferida a su implementación, ya registrada en esas specs.
+
+**[SDD-Check] — 2026-07-01 (auditoría docs/specs)**
+- Specs leídas: SPEC-002, SPEC-002b, SPEC-005, SPEC-007, SPEC-008, SPEC-011, SPEC-012, SPEC-013, SPEC-000-naming; CONSTITUTION.md, AGENTS.md, 00-INDEX.md, docs/{ARCHITECTURE,PRODUCT,DEVELOPMENT,CONTRIBUTING,SDD-ENFORCEMENT,SPEC-FORMAT}.md.
+- Includes/excludes verificados: cambios acotados a docs/specs; verificada la superficie real del puerto contra `src/domain/ports.py` (no se editó `src/`).
+- SSOTs afectados: `specs/SPEC-002-agent-client.md` (puerto `AgentClient` + `CredentialProvider`), `AGENTS.md`, `specs/SPEC-013`, `specs/SPEC-000-naming.md`, `specs/SPECS_REGISTRY.md`, `historial/sdd.md`.
+
+---
+
 ## 2026-06-21 — Gate SDD cableado en opencode (cierra deuda #1 de la universalización)
 
 **Scope cerrado (método/framework; no toca `src/` ni el producto). Toca el adaptador preventivo de opencode.**

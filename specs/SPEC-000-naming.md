@@ -59,7 +59,7 @@ Ningún identificador (módulo, paquete, clase, función, método, variable, atr
 - [x] El linter corre en pre-commit (resuelto 2026-06-14: hook `naming-agnostic` con `language: python`, acotado a `^src/`; verde en `pre-commit run --all-files`).
 - [x] El registro de tokens prohibidos vive en este archivo y se referencia desde el linter (`SPEC-000-naming.md` línea 3 de `check_naming.py`).
 - [x] `docs/ARCHITECTURE.md` describe cómo `RemoteAgentClient` aísla al proveedor (sección `src/adapters/`).
-- [x] Excepciones documentadas registradas en este archivo bajo "Excepciones explícitas" (`json`, `_serializer`, métodos de `requests`).
+- [x] Excepciones documentadas registradas en este archivo bajo "Excepciones explícitas" (`json`, métodos de `requests`).
 
 ## Historial
 

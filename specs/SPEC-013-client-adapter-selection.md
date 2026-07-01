@@ -36,8 +36,8 @@ Como operador de la suite, quiero poder configurar contra qué plataforma tecnol
 - **FR-005**: MUST: Se define un `AgentClientFactory` dentro de la capa `adapters/` con la firma `create(config: PlatformConfig) -> AgentClient`. Este factory encapsula el condicional de creación del cliente y **también** resuelve/instancia el `CredentialProvider` correspondiente, evitando duplicar este cableado en los composition roots.
 - **FR-006**: MUST: La validación y requerimiento de variables en `PlatformConfig.from_env()` MUST volverse condicional al `AGENT_CLIENT_TYPE` seleccionado. El set de variables exigidas (ej. las `ES_*` originales vs `ALT_CLIENT_*`) debe depender exclusivamente de la plataforma activa, evitando errores de inicialización por variables ajenas al cliente elegido.
 - **FR-007**: MAY: Los clientes alternativos pueden introducir SDKs de terceros en `requirements.txt` para interactuar con plataformas externas. Si lo hacen, la importación y uso de estas dependencias MUST confinarse exclusivamente a los módulos concretos dentro de `src/adapters/` para no contaminar el dominio ni la capa de aplicación.
-- **FR-009**: MUST: Las credenciales y endpoints específicos de los clientes alternativos se definen como variables de entorno genéricas y agnósticas al proveedor (ej. `ALT_CLIENT_URL`, `ALT_CLIENT_API_KEY`), leídas exclusivamente por `PlatformConfig` (único lector de `os.environ`). El set concreto exigido para cada cliente queda gobernado por la requeridad condicional de FR-006.
 - **FR-008**: MUST: Las anotaciones concretas de tipo en los composition roots (específicamente en `dashboard/app.py`, ej. `tuple[..., RemoteAgentClient, ...]` y los `cast("RemoteAgentClient", ...)`) MUST relajarse al puerto abstracto `AgentClient` para evitar fallos en `mypy --strict` cuando el factory devuelva otros adaptadores.
+- **FR-009**: MUST: Las credenciales y endpoints específicos de los clientes alternativos se definen como variables de entorno genéricas y agnósticas al proveedor (ej. `ALT_CLIENT_URL`, `ALT_CLIENT_API_KEY`), leídas exclusivamente por `PlatformConfig` (único lector de `os.environ`). El set concreto exigido para cada cliente queda gobernado por la requeridad condicional de FR-006.
 
 ## Key Entities
 
@@ -68,8 +68,8 @@ Como operador de la suite, quiero poder configurar contra qué plataforma tecnol
 | FR-005 | Unit test de `AgentClientFactory` validando que devuelve la instancia correcta según el config |
 | FR-006 | Unit test verificando que la exigencia de variables (missing config error) depende del tipo de cliente activo |
 | FR-007 | Verificación de importaciones cruzadas (linter `lint-imports`) que garantiza el aislamiento en `adapters/` |
-| FR-009 | Extensión de `PlatformConfig` con lectura de variables genéricas `ALT_CLIENT_*` y tests de parsing |
 | FR-008 | Ajuste de anotaciones en `app.py` verificado vía `mypy --strict` corriendo en el pipeline |
+| FR-009 | Extensión de `PlatformConfig` con lectura de variables genéricas `ALT_CLIENT_*` y tests de parsing |
 | SC-001 | Smoke test utilizando el cliente remoto original |
 | SC-002 | Test de integración instanciando diferentes clientes alternativos según configuración mock |
 | SC-003 | Prueba unitaria de fallo temprano al arrancar con un tipo de cliente no registrado |

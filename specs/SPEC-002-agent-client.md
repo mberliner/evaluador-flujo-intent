@@ -39,11 +39,11 @@ entorno propia.
 
 ### `src/adapters/token_provider.py`
 
-Sin cambios respecto a Iter 2. `TokenProvider` cachea y refresca el token automáticamente.
+Sin cambios respecto a Iter 2. `TokenProvider` cachea y refresca el token automáticamente e **implementa el puerto `CredentialProvider`** (`get() -> str`) del dominio. El identificador es agnóstico (SPEC-000-naming): el protocolo de auth concreto es detalle interno del adapter.
 
 ### `src/adapters/remote_agent_client.py`
 
-`RemoteAgentClient` implementa el puerto `AgentClient`. Expone tres métodos:
+`RemoteAgentClient` implementa el puerto `AgentClient`. Expone los siguientes métodos (`get_trace` se documenta en [[SPEC-007-agent-trace]] FR-005, no acá):
 
 ---
 
@@ -106,13 +106,17 @@ Normaliza el campo `content` de un mensaje (string o lista de bloques) a string 
 
 ### `src/domain/ports.py`
 
-Agregar a la interfaz `AgentClient`:
+**Superficie completa del puerto `AgentClient`** — esta tabla es el SSOT de la interfaz (el detalle de `get_trace` lo gobierna [[SPEC-007-agent-trace]] FR-005; el resto, esta spec):
 
-```python
-def wait_for_completion(self, thread_id: str, timeout_seconds: int) -> bool: ...
-def get_thread_messages(self, thread_id: str) -> list[dict]: ...
-def get_final_response(self, thread_id: str, fallback_content: str) -> AgentResponse: ...
-```
+| Método | Owner | Rol |
+|--------|-------|-----|
+| `send(form, conversation_id=None) -> AgentResponse` | SPEC-002 / [[SPEC-002b-message-builder]] | Envía el payload y devuelve el control message inicial |
+| `wait_for_completion(thread_id, timeout_seconds) -> bool` | SPEC-002 | Polling hasta que el flow completa |
+| `get_thread_messages(thread_id) -> list[dict]` | SPEC-002 | Historial crudo del thread |
+| `get_final_response(thread_id, fallback_content) -> AgentResponse` | SPEC-002 | Respuesta final descartando el control message |
+| `get_trace(thread_id) -> AgentTrace` | [[SPEC-007-agent-trace]] | Traza interna de sub-agentes |
+
+> **Puerto de credenciales.** El dominio define además el puerto `CredentialProvider` (`get() -> str`) en el mismo `domain/ports.py`, implementado por el adapter `TokenProvider` (ver abajo). Su SSOT es esta spec.
 
 ### `src/domain/` — extracción de clasificación
 
@@ -195,3 +199,4 @@ result = evaluator.evaluate(case, response)
 - **2026-05-25** — Sincronización con implementación: `send()` renombrado `prompt→form` (recibe `dict` de `MessageBuilder`, serializa internamente). Ejemplo de flujo actualizado. `extract_classification` aclarada como responsabilidad de SPEC-003. Sección "Revisión pendiente" eliminada (SPEC-002b cerrada).
 - **2026-06-07** — Revisión por ADR-005 (capa de aplicación). El puerto `AgentClient` gana `get_final_response(thread_id, fallback_content)`: el filtrado del control message del agente se confina en el adapter (antes en `runner.select_final_response`). `_extract_text` (privado en el adapter) se mueve al dominio como `extract_message_text` en `domain/message_text.py`. `get_thread_messages` sigue crudo (display del dashboard).
 - **2026-06-08** — Reconciliación spec↔código: `get_final_response` está implementado (`src/domain/ports.py`, `src/adapters/remote_agent_client.py`) y sus tres criterios se marcan `[x]` (figuraban pendientes pese a estar hechos).
+- **2026-07-01** — Reconciliación documental (sin cambio de código): la sección `domain/ports.py` pasa a listar la **superficie completa** del puerto `AgentClient` (5 métodos, con `get_trace` referido a [[SPEC-007-agent-trace]]) como SSOT de la interfaz; el bloque incremental previo enumeraba solo 3 y el encabezado decía "tres métodos". Se registra el puerto **`CredentialProvider`** (implementado por `TokenProvider`), que existía en el código y que [[SPEC-011-agent-under-test]]/[[SPEC-013-client-adapter-selection]] citan como "puerto existente" sin que ninguna spec lo gobernara (cierre de gap de trazabilidad, Principio V).
