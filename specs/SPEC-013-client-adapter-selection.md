@@ -3,7 +3,7 @@
 **Estado:** draft
 **Iter:** 13
 **Formato:** Híbrido
-**Depende de:** [[SPEC-000-naming]], [[SPEC-002-agent-client]], [[SPEC-011-agent-under-test]]
+**Depende de:** [[SPEC-000-naming]], [[SPEC-002-agent-client]]
 
 ## User Story (Priority: P2)
 
@@ -27,6 +27,7 @@ Verificación empírica contra una plataforma alternativa concreta de flujo de i
 
 - Q: ¿El formulario de entrada que exige la plataforma alternativa requiere transformación respecto del schema actual? → A: No. Los 12 campos top-level y sus objetos anidados (`tipo_intent`, `datos_requeridos.otros`) coinciden **1:1** con `schemas/FI_Orquestador_Input.schema.json` y con lo que produce `MessageBuilder`. El adaptador sólo desenvuelve la clave `form` y postea su contenido **plano** en la raíz del body (descartando `id`); no incrusta el payload como texto en un bloque `messages` (FR-010).
 - Q: ¿Cómo se mapea la respuesta multi-etapa de la plataforma a la paleta única del dominio (`Verde/Amarillo/Rojo/Negro/Rechazado`)? → A: La respuesta es un pipeline con corto-circuito: `integridad → impacto → factibilidad → fastgate`. Regla de colapso confirmada con datos: si `fastgate` viene presente → se usa su `clasificacion` (color); si `fastgate` viene `null` (algún gate previo dio `false`) → se emite `Rechazado`. El discriminador es `fastgate is null`, no el mail de salida (que existe en ambas ramas) (FR-011).
+- Q: ¿SPEC-013 debe esperar a SPEC-011 (`AgentInput`) para implementarse? → A: No. Se desacopla: la spec adopta la firma vigente `send(form: dict)` porque el `form` de `MessageBuilder` ya coincide 1:1 con la entrada de la plataforma. Se elimina la dependencia y el "riesgo de orden"; la migración a `AgentInput` queda a cargo de SPEC-011 (FR-002, FR-003).
 
 ## Acceptance Scenarios
 
@@ -37,8 +38,8 @@ Verificación empírica contra una plataforma alternativa concreta de flujo de i
 ## Functional Requirements
 
 - **FR-001**: MUST: El sistema lee la variable de entorno `AGENT_CLIENT_TYPE` desde `adapters/platform_config.py` para determinar el tipo de adaptador a instanciar. Si la variable no está presente, su valor por defecto asume el cliente original.
-- **FR-002**: MUST: Todo nuevo cliente de agente implementa los 5 métodos del puerto `AgentClient` (`send`, `wait_for_completion`, `get_thread_messages`, `get_final_response`, `get_trace`). La firma de `send` es la definida en **FR-003** (`send(input: AgentInput)`), que reemplaza la firma legada `send(form: dict)` de [[SPEC-002-agent-client]]; FR-003 es la fuente única de esa firma y el cambio aplica al puerto y a todos sus implementadores (incluido `RemoteAgentClient`). Si la plataforma alternativa no soporta historiales o trazas nativas, los métodos `get_thread_messages` y `get_trace` MUST devolver estructuras vacías (ej. `[]` y `AgentTrace` vacío) para satisfacer el protocolo sin romper consumidores.
-- **FR-003**: MUST: La construcción del payload específico del proveedor ocurre íntegramente en el adaptador concreto, que recibe el value object `AgentInput` (según se define en [[SPEC-011-agent-under-test]]). El adaptador se encarga de renderizar este input a la estructura esperada por su plataforma y de desempaquetar la respuesta.
+- **FR-002**: MUST: Todo nuevo cliente de agente implementa los 5 métodos del puerto `AgentClient` (`send`, `wait_for_completion`, `get_thread_messages`, `get_final_response`, `get_trace`). Esta spec adopta la firma **actual** del puerto, `send(form: dict, conversation_id=None)` de [[SPEC-002-agent-client]], sin modificarla: el `form` que produce `MessageBuilder` ya es el contrato de entrada suficiente (ver FR-010). La eventual migración a `send(input: AgentInput)` queda fuera de alcance y a cargo de [[SPEC-011-agent-under-test]]. Si la plataforma alternativa no soporta historiales o trazas nativas, los métodos `get_thread_messages` y `get_trace` MUST devolver estructuras vacías (ej. `[]` y `AgentTrace` vacío) para satisfacer el protocolo sin romper consumidores.
+- **FR-003**: MUST: La construcción del payload específico del proveedor ocurre íntegramente en el adaptador concreto, que recibe el `form: dict` (payload de `MessageBuilder`, `{"form": {...}}`). El adaptador se encarga de renderizar ese input a la estructura esperada por su plataforma (ver FR-010) y de desempaquetar la respuesta (ver FR-011).
 - **FR-004**: MUST: Se respeta el principio de nomenclatura agnóstica a tecnología ([[SPEC-000-naming]]). Los identificadores en el código fuente de los nuevos clientes no usarán nombres de proveedores comerciales, empleando sufijos descriptivos sobre el mecanismo (ej. `SyncHttpAgentClient`, `WebSocketAgentClient`, `CustomRestAgentClient`).
 - **FR-005**: MUST: Se define un `AgentClientFactory` dentro de la capa `adapters/` con la firma `create(config: PlatformConfig) -> AgentClient`. Este factory encapsula el condicional de creación del cliente y **también** resuelve/instancia el `CredentialProvider` correspondiente, evitando duplicar este cableado en los composition roots.
 - **FR-006**: MUST: La validación y requerimiento de variables en `PlatformConfig.from_env()` MUST volverse condicional al `AGENT_CLIENT_TYPE` seleccionado. El set de variables exigidas (ej. las `ES_*` originales vs `ALT_CLIENT_*`) debe depender exclusivamente de la plataforma activa, evitando errores de inicialización por variables ajenas al cliente elegido.
@@ -62,9 +63,9 @@ Verificación empírica contra una plataforma alternativa concreta de flujo de i
 
 ## Assumptions
 
-- La variable `AGENT_CLIENT_TYPE` (plataforma/transporte) y la variable `AGENT_PROFILE` definida en [[SPEC-011-agent-under-test]] (qué agente/lógica se evalúa) son ejes ortogonales e independientes. Esta spec asume que SPEC-011 entra primero o en conjunto, adoptando la firma de `send(input: AgentInput)` en FR-003 en lugar de `send(form: dict)`.
+- **Desacople de [[SPEC-011-agent-under-test]]:** esta spec es independiente de SPEC-011. Adopta la firma vigente `send(form: dict)` de [[SPEC-002-agent-client]] (verificado 1:1 contra el contrato de la plataforma, FR-010), de modo que puede implementarse sin esperar el value object `AgentInput`. Si SPEC-011 introduce `send(input: AgentInput)` más adelante, la reconciliación de firma es responsabilidad de esa spec, no de esta.
+- La variable `AGENT_CLIENT_TYPE` (plataforma/transporte) y la de perfil de agente de [[SPEC-011-agent-under-test]] (qué agente/lógica se evalúa) son ejes ortogonales e independientes.
 - La lectura de entorno sigue centralizada en `PlatformConfig`, pero su exigencia se vuelve condicional al tipo de cliente seleccionado (FR-006).
-- **Riesgo de orden (drafts encadenados):** FR-003 depende del value object `AgentInput` de [[SPEC-011-agent-under-test]], que aún está en `draft` y sin implementar. Esta spec asume que SPEC-011 se implementa antes o en conjunto; si SPEC-013 avanzara primero, FR-003 debería volver transitoriamente a la firma `send(form: dict)` de [[SPEC-002-agent-client]] y reconciliarse luego.
 
 ## Coverage mapping
 
@@ -94,3 +95,4 @@ Verificación empírica contra una plataforma alternativa concreta de flujo de i
 
 - **2026-06-24** — Spec creada. Motivación: Separar explícitamente el perfil del agente a evaluar de la plataforma de infraestructura tecnológica subyacente donde este se aloja, dando soporte a plataformas alternativas de inferencia sin alterar el circuito de evaluación.
 - **2026-07-02** — Verificación empírica contra una plataforma alternativa concreta (adaptador síncrono REST, auth `x-api-key`). Se confirmó por sondeo del contrato real: (1) el formulario de entrada coincide 1:1 con el schema actual, sin transformación de campos (FR-010); (2) la respuesta es un pipeline con corto-circuito (`integridad → impacto → factibilidad → fastgate`), y su colapso a la paleta del dominio se rige por la presencia/ausencia del bloque de clasificación final, mapeando la rama de corto-circuito a `Rechazado` (FR-011). Se agregaron FR-010 y FR-011 con su cobertura.
+- **2026-07-02** — Desacople de [[SPEC-011-agent-under-test]]. Habilitado por la verificación anterior (el `form` coincide 1:1 con la plataforma), FR-002/FR-003 vuelven a la firma vigente `send(form: dict)` en vez de `send(input: AgentInput)`. Se quitó SPEC-011 de `Depende de` y se eliminó el "riesgo de orden" de Assumptions. SPEC-013 queda implementable de forma autónoma.
