@@ -21,6 +21,13 @@ Como operador de la suite, quiero poder configurar contra qué plataforma tecnol
 - Q: ¿Se permite incorporar SDKs de terceros como dependencias del proyecto para implementar los clientes alternativos? → A: Sí, se permite añadir SDKs en `requirements.txt`, confinando su importación estricta a la capa de adaptadores (FR-007).
 - Q: ¿Dónde debería residir la lógica condicional que decide instanciar uno u otro adaptador de cliente alternativo? → A: En un nuevo `AgentClientFactory` dentro de la capa `adapters/` para centralizar la lógica de creación y evitar duplicación en los composition roots (FR-005).
 
+### Session 2026-07-02
+
+Verificación empírica contra una plataforma alternativa concreta de flujo de intents (adaptador síncrono REST con auth por header `x-api-key`), sondeando su contrato real.
+
+- Q: ¿El formulario de entrada que exige la plataforma alternativa requiere transformación respecto del schema actual? → A: No. Los 12 campos top-level y sus objetos anidados (`tipo_intent`, `datos_requeridos.otros`) coinciden **1:1** con `schemas/FI_Orquestador_Input.schema.json` y con lo que produce `MessageBuilder`. El adaptador sólo desenvuelve la clave `form` y postea su contenido **plano** en la raíz del body (descartando `id`); no incrusta el payload como texto en un bloque `messages` (FR-010).
+- Q: ¿Cómo se mapea la respuesta multi-etapa de la plataforma a la paleta única del dominio (`Verde/Amarillo/Rojo/Negro/Rechazado`)? → A: La respuesta es un pipeline con corto-circuito: `integridad → impacto → factibilidad → fastgate`. Regla de colapso confirmada con datos: si `fastgate` viene presente → se usa su `clasificacion` (color); si `fastgate` viene `null` (algún gate previo dio `false`) → se emite `Rechazado`. El discriminador es `fastgate is null`, no el mail de salida (que existe en ambas ramas) (FR-011).
+
 ## Acceptance Scenarios
 
 1. **Given** que no se especifica una variable de selección de cliente de agente, **When** el sistema se inicializa, **Then** utiliza por defecto el adaptador asincrónico original (`RemoteAgentClient`), asegurando retrocompatibilidad total.
@@ -38,6 +45,8 @@ Como operador de la suite, quiero poder configurar contra qué plataforma tecnol
 - **FR-007**: MAY: Los clientes alternativos pueden introducir SDKs de terceros en `requirements.txt` para interactuar con plataformas externas. Si lo hacen, la importación y uso de estas dependencias MUST confinarse exclusivamente a los módulos concretos dentro de `src/adapters/` para no contaminar el dominio ni la capa de aplicación.
 - **FR-008**: MUST: Las anotaciones concretas de tipo en los composition roots (específicamente en `dashboard/app.py`, ej. `tuple[..., RemoteAgentClient, ...]` y los `cast("RemoteAgentClient", ...)`) MUST relajarse al puerto abstracto `AgentClient` para evitar fallos en `mypy --strict` cuando el factory devuelva otros adaptadores.
 - **FR-009**: MUST: Las credenciales y endpoints específicos de los clientes alternativos se definen como variables de entorno genéricas y agnósticas al proveedor (ej. `ALT_CLIENT_URL`, `ALT_CLIENT_API_KEY`), leídas exclusivamente por `PlatformConfig` (único lector de `os.environ`). El set concreto exigido para cada cliente queda gobernado por la requeridad condicional de FR-006.
+- **FR-010**: MUST: Cuando la plataforma alternativa consume el formulario de intent como JSON estructurado nativo (no como texto embebido), el adaptador MUST enviar el contenido del `form` **plano en la raíz del body**, sin el envoltorio `form` ni el `id` del caso. El mapeo de campos es identidad: los 12 campos y sus objetos anidados (`tipo_intent.{negocio,operativo,capacidad_equipos,tecnico_arquitectural}`, `datos_requeridos.{ninguno,datos_publicos,datos_operativos,datos_personales,datos_confidenciales,otros.{estado,message}}`) coinciden 1:1 con `schemas/FI_Orquestador_Input.schema.json`; el adaptador NO transforma nombres ni tipos. Nota: la plataforma puede exigir como obligatorios campos que el schema declara con `default` (ej. `restricciones`, `supuesto_riesgo`); esto no impacta porque `TestCase` ya garantiza su presencia no vacía.
+- **FR-011**: MUST: El adaptador MUST colapsar la respuesta multi-etapa de la plataforma a un único valor de `PALETA_CLASIFICACION` antes de construir el `AgentResponse.content`, aplicando: (a) si el bloque de clasificación final (`fastgate`) viene presente, usar su color (`Verde/Amarillo/Rojo/Negro`); (b) si dicho bloque viene ausente/`null` —porque un gate previo (`integridad`, `impacto` o `factibilidad`) resolvió `false` y el pipeline hizo corto-circuito— emitir `Rechazado`. El discriminador MUST ser la ausencia del bloque de clasificación final, no el bloque de mail de salida (presente en ambas ramas). El adaptador deposita el valor colapsado en `AgentResponse.content` de forma que `ClassificationEvaluator.extract` lo reconozca por su regex de paleta.
 
 ## Key Entities
 
@@ -70,6 +79,8 @@ Como operador de la suite, quiero poder configurar contra qué plataforma tecnol
 | FR-007 | Verificación de importaciones cruzadas (linter `lint-imports`) que garantiza el aislamiento en `adapters/` |
 | FR-008 | Ajuste de anotaciones en `app.py` verificado vía `mypy --strict` corriendo en el pipeline |
 | FR-009 | Extensión de `PlatformConfig` con lectura de variables genéricas `ALT_CLIENT_*` y tests de parsing |
+| FR-010 | Unit test del adaptador que valida el body plano (sin envoltorio `form` ni `id`) y la identidad de campos contra `schemas/FI_Orquestador_Input.schema.json` |
+| FR-011 | Unit test que cubre ambas ramas del colapso: respuesta con bloque de clasificación (→ color) y respuesta con corto-circuito por gate en `false` (→ `Rechazado`) |
 | SC-001 | Smoke test utilizando el cliente remoto original |
 | SC-002 | Test de integración instanciando diferentes clientes alternativos según configuración mock |
 | SC-003 | Prueba unitaria de fallo temprano al arrancar con un tipo de cliente no registrado |
@@ -82,3 +93,4 @@ Como operador de la suite, quiero poder configurar contra qué plataforma tecnol
 ## Historial
 
 - **2026-06-24** — Spec creada. Motivación: Separar explícitamente el perfil del agente a evaluar de la plataforma de infraestructura tecnológica subyacente donde este se aloja, dando soporte a plataformas alternativas de inferencia sin alterar el circuito de evaluación.
+- **2026-07-02** — Verificación empírica contra una plataforma alternativa concreta (adaptador síncrono REST, auth `x-api-key`). Se confirmó por sondeo del contrato real: (1) el formulario de entrada coincide 1:1 con el schema actual, sin transformación de campos (FR-010); (2) la respuesta es un pipeline con corto-circuito (`integridad → impacto → factibilidad → fastgate`), y su colapso a la paleta del dominio se rige por la presencia/ausencia del bloque de clasificación final, mapeando la rama de corto-circuito a `Rechazado` (FR-011). Se agregaron FR-010 y FR-011 con su cobertura.
