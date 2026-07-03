@@ -140,3 +140,22 @@ def test_agent_id_opcional_para_cliente_alternativo_cae_a_etiqueta(
     _set_env(monkeypatch, {**_ALT_ENV, "AGENT_ID": "clasificador-v2"})
     config = PlatformConfig.from_env(load_dotfile=False)
     assert config.agent_id == "clasificador-v2"
+
+
+# ---------------------------------------------------------------------------
+# URL efectiva del endpoint bajo test (SPEC-013 FR-US2-001)
+# ---------------------------------------------------------------------------
+
+
+def test_effective_endpoint_url_cliente_original(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FR-US2-001: para remote_async compone chat_url + agent_id (como el cliente)."""
+    _set_env(monkeypatch, _FULL_ENV)
+    config = PlatformConfig.from_env(load_dotfile=False)
+    assert config.effective_endpoint_url == "https://example/chat/agent-1/chat/completions"
+
+
+def test_effective_endpoint_url_cliente_alternativo(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FR-US2-001: para sync_http es la URL alternativa tal cual."""
+    _set_env(monkeypatch, _ALT_ENV)
+    config = PlatformConfig.from_env(load_dotfile=False)
+    assert config.effective_endpoint_url == "https://alt.example/intents"

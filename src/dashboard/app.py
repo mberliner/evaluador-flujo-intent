@@ -222,7 +222,9 @@ def _send_and_evaluate(case: TestCase, *, fetch_trace: bool = False) -> None:
 
     result = evaluator.evaluate(case, agent_response)
 
-    run = SuiteResult.create((result,), agent_id=config.agent_id)
+    run = SuiteResult.create(
+        (result,), agent_id=config.agent_id, endpoint_url=config.effective_endpoint_url
+    )
     saved_path: str | None = None
     persist_error: str | None = None
     try:
@@ -235,6 +237,7 @@ def _send_and_evaluate(case: TestCase, *, fetch_trace: bool = False) -> None:
         "messages": messages,
         "trace": trace,
         "thread_id": thread_id,
+        "endpoint_url": config.effective_endpoint_url,
         "saved_path": saved_path,
         "persist_error": persist_error,
     }
@@ -278,6 +281,11 @@ def _render_eval_result(data: dict[str, object]) -> None:
 
     if result.conversation_id:
         ui.caption(f"conversation_id: `{result.conversation_id}`")
+
+    # URL efectiva del endpoint/agente bajo test (SPEC-013 FR-US2-004a).
+    endpoint_url = cast("str | None", data.get("endpoint_url"))
+    if endpoint_url:
+        ui.caption(f"endpoint: `{endpoint_url}`")
 
     persist_error = cast("str | None", data.get("persist_error"))
     saved_path = cast("str | None", data.get("saved_path"))
@@ -343,6 +351,10 @@ def _render_latest_run() -> None:
 
     run = by_id[chosen]
     ui.caption(f"run_id: `{run.run_id}` — {run.timestamp} — agent_id: `{run.agent_id}`")
+    # URL efectiva del endpoint bajo test, junto a la metadata y la matriz de la
+    # corrida (SPEC-013 FR-US2-004b/c); vacía en corridas previas al campo.
+    if run.endpoint_url:
+        ui.caption(f"endpoint: `{run.endpoint_url}`")
     s = run.summary
     cols = ui.columns(4)
     cols[0].metric("Total", s["total"])
@@ -463,6 +475,7 @@ def _render_batch(g: int) -> None:
         ui.session_state["batch_done"] = []
         ui.session_state["batch_total"] = len(loaded.cases)
         ui.session_state["batch_agent_id"] = config.agent_id
+        ui.session_state["batch_endpoint_url"] = config.effective_endpoint_url
         ui.session_state["batch_traces"] = fetch_traces
         ui.session_state["batch_client"] = client
         ui.session_state["batch_evaluator"] = evaluator
@@ -534,6 +547,7 @@ def _finalize_batch(*, stopped: bool) -> None:
     done = cast("list[TestResult]", ui.session_state.get("batch_done", []))
     total = cast(int, ui.session_state.get("batch_total", len(done)))
     agent_id = cast(str, ui.session_state.get("batch_agent_id", ""))
+    endpoint_url = cast(str, ui.session_state.get("batch_endpoint_url", ""))
 
     ui.session_state["batch_phase"] = "idle"
     for key in ("batch_pending", "batch_client", "batch_evaluator"):
@@ -541,7 +555,7 @@ def _finalize_batch(*, stopped: bool) -> None:
 
     if stopped and not done:
         ui.session_state["batch_result"] = {
-            "run": SuiteResult.create((), agent_id=agent_id),
+            "run": SuiteResult.create((), agent_id=agent_id, endpoint_url=endpoint_url),
             "saved_path": None,
             "stopped": True,
             "requested": total,
@@ -549,7 +563,7 @@ def _finalize_batch(*, stopped: bool) -> None:
         }
         return
 
-    suite = SuiteResult.create(tuple(done), agent_id=agent_id)
+    suite = SuiteResult.create(tuple(done), agent_id=agent_id, endpoint_url=endpoint_url)
     saved_path: str | None = None
     persist_error: str | None = None
     try:
@@ -583,6 +597,11 @@ def _render_batch_result(data: dict[str, object]) -> None:
     persist_error = cast("str | None", data.get("persist_error"))
     if persist_error:
         ui.error(f"La corrida se cerró pero NO se pudo persistir: {persist_error}")
+
+    # URL efectiva del endpoint bajo test, junto a las métricas/matriz de la
+    # corrida batch (SPEC-013 FR-US2-004b/c).
+    if run.endpoint_url:
+        ui.caption(f"endpoint: `{run.endpoint_url}`")
 
     s = run.summary
     cols = ui.columns(5)

@@ -121,6 +121,7 @@ def build_suite(
     completion_timeout: int = 300,
     capture_traces: bool = False,
     on_result: ProgressCallback | None = None,
+    endpoint_url: str = "",
 ) -> SuiteResult:
     results = run_batch(
         cases,
@@ -130,4 +131,4 @@ def build_suite(
         capture_traces=capture_traces,
         on_result=on_result,
     )
-    return SuiteResult.create(results, agent_id=agent_id)
+    return SuiteResult.create(results, agent_id=agent_id, endpoint_url=endpoint_url)

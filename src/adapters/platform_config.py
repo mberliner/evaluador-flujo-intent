@@ -64,6 +64,20 @@ class PlatformConfig:
     alt_client_url: str = ""
     alt_client_api_key: str = ""
 
+    @property
+    def effective_endpoint_url(self) -> str:
+        """URL efectiva del endpoint/agente bajo test, segun el cliente activo.
+
+        Expone hacia afuera (dashboard, persistencia de corridas) la URL que hoy
+        cada adaptador arma internamente, sin cambiar su contrato (SPEC-013
+        FR-US2-001). Para `remote_async` replica la construccion de
+        RemoteAgentClient.send; para `sync_http` es la URL alternativa tal cual.
+        El identificador es agnostico al proveedor (SPEC-000-naming).
+        """
+        if self.client_type == CLIENT_TYPE_SYNC_HTTP:
+            return self.alt_client_url
+        return f"{self.chat_url}{self.agent_id}/chat/completions"
+
     @classmethod
     def from_env(cls, *, load_dotfile: bool = True) -> PlatformConfig:
         if load_dotfile:

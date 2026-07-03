@@ -216,7 +216,12 @@ def main(argv: list[str]) -> int:
         print(f"  [{index}/{total}] {result.case_id} -> {result.verdict}", flush=True)
 
     suite = build_suite(
-        loaded.cases, client, evaluator, agent_id=config.agent_id, on_result=_print_progress
+        loaded.cases,
+        client,
+        evaluator,
+        agent_id=config.agent_id,
+        on_result=_print_progress,
+        endpoint_url=config.effective_endpoint_url,
     )
 
     requested = len(loaded.cases)

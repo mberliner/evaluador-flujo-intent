@@ -93,6 +93,28 @@ def test_suite_round_trip_preserves_trace() -> None:
     assert restored.results[0].flow_id == "flow-9"
 
 
+def test_endpoint_url_serialized_and_round_trips() -> None:
+    """SPEC-013 FR-US2-002: endpoint_url viaja en to_dict/from_dict sin pérdida."""
+    run = SuiteResult.create(
+        (_result(),), agent_id="agent-x", endpoint_url="https://alt.example/intents"
+    )
+    assert run.to_dict()["endpoint_url"] == "https://alt.example/intents"
+    restored = SuiteResult.from_dict(run.to_dict())
+    assert restored == run
+    assert restored.endpoint_url == "https://alt.example/intents"
+
+
+def test_endpoint_url_default_and_backward_compatible() -> None:
+    """SPEC-013 FR-US2-002: default vacío; runs previos sin la clave se leen igual."""
+    run = SuiteResult.create((_result(),), agent_id="agent-x")
+    assert run.endpoint_url == ""
+    legacy = run.to_dict()
+    del legacy["endpoint_url"]  # corrida persistida antes del campo
+    restored = SuiteResult.from_dict(legacy)
+    assert restored.endpoint_url == ""
+    assert restored == run
+
+
 def test_result_without_trace_serializes_none() -> None:
     d = _result().to_dict()
     assert d["trace"] is None
