@@ -1565,3 +1565,16 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 - Specs leídas: SPEC-013-client-adapter-selection, SPEC-000-naming, SPEC-002-agent-client, SPEC-002b-message-builder, SPEC-003-classification-evaluator, CONSTITUTION.md, docs/ARCHITECTURE.md.
 - Includes/excludes verificados: fuera de alcance respetado (sin soporte multi-cliente por corrida; `MessageBuilder` intacto); naming agnóstico en identificadores nuevos; `requests` confinado a `adapters/`; pipeline local VERDE (constitución, trazabilidad, ruff, mypy --strict, naming, lint-imports, bandit, pytest).
 - SSOTs afectados: specs/SPEC-013-client-adapter-selection.md (draft, pend. validación funcional), specs/SPECS_REGISTRY.md, docs/ARCHITECTURE.md (ADR-001), .env.example, historial/sdd.md.
+
+---
+
+## 2026-07-03 — Cierre de SPEC-013: OK funcional del usuario, spec pasa a `active`
+
+**Scope:** cierre de SPEC-013-client-adapter-selection. El usuario confirmó la prueba funcional manual (SC-004): un caso real con `AGENT_CLIENT_TYPE=sync_http` contra la plataforma alternativa devuelve veredicto correcto por el circuito completo, y el camino por defecto (sin la variable) sigue operando contra el proveedor original.
+
+**Cambios:** SC-004 tildado en la spec; estado `draft` → `active` en la spec y en `SPECS_REGISTRY.md`. Sin cambios de código (solo cierre documental).
+
+**[SDD-Check] — 2026-07-03 (cierre SPEC-013)**
+- Specs leídas: SPEC-013-client-adapter-selection.
+- Includes/excludes verificados: SC-001..004 confirmados (los tres primeros por suite automatizada, SC-004 por OK explícito del usuario); sin cambios de comportamiento.
+- SSOTs afectados: specs/SPEC-013-client-adapter-selection.md (active), specs/SPECS_REGISTRY.md, historial/sdd.md.
