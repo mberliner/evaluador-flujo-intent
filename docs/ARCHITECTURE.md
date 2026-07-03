@@ -40,7 +40,7 @@ _Ejemplo representativo:_ `ClassificationEvaluator` evalúa un `TestResult` por 
 
 Implementaciones concretas de los puertos del dominio. Todo I/O con el mundo externo vive aquí: red, filesystem, variables de entorno. Cambiar de proveedor implica reescribir el adapter correspondiente y nada más.
 
-_Ejemplo representativo:_ `RemoteAgentClient` encapsula el protocolo HTTP del agente externo; `FileRunRepository` persiste y lee corridas en `runs/`; `PlatformConfig` es la única lectora de `os.environ`.
+_Ejemplo representativo:_ `RemoteAgentClient` encapsula el protocolo HTTP del agente externo; `SyncHttpAgentClient` hace lo propio con la plataforma alternativa síncrona y `AgentClientFactory` elige entre ambos según la config (SPEC-013); `FileRunRepository` persiste y lee corridas en `runs/`; `PlatformConfig` es la única lectora de `os.environ`.
 
 ### `src/dashboard/`
 
@@ -68,7 +68,7 @@ Punto de entrada CLI/headless y **composition root** del modo no interactivo. Ca
 
 ### ADR-001 — Nomenclatura agnóstica a tecnología
 
-Aplicada transversalmente. Detalle en `specs/SPEC-000-naming.md`. **El `RemoteAgentClient` actual usa Watson Orchestrate**: el endpoint, el formato del payload y el flujo de auth están confinados a `adapters/remote_agent_client.py` + `adapters/token_provider.py`. Cambiar de proveedor implica reescribir esos dos archivos y la spec `SPEC-002-agent-client`, nada más.
+Aplicada transversalmente. Detalle en `specs/SPEC-000-naming.md`. **El `RemoteAgentClient` usa Watson Orchestrate**: el endpoint, el formato del payload y el flujo de auth están confinados a `adapters/remote_agent_client.py` + `adapters/token_provider.py`. Desde [[SPEC-013-client-adapter-selection]] la plataforma es además **seleccionable por configuración**: `AGENT_CLIENT_TYPE` decide el adaptador (`remote_async` → `RemoteAgentClient`; `sync_http` → `SyncHttpAgentClient`, REST síncrono con llave por header) y `adapters/agent_client_factory.py` centraliza ese condicional junto con la resolución del `CredentialProvider`. Cambiar/agregar un proveedor implica escribir un adaptador que cumpla el puerto `AgentClient`, registrarlo en el factory y en la requeridad condicional de `PlatformConfig`, nada más: los composition roots solo conocen el puerto.
 
 ### ADR-002 — Datos cargados en runtime por interfaz, no versionados
 

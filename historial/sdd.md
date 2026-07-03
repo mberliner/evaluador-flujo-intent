@@ -1538,3 +1538,30 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 - Specs leídas: ninguna (tooling del harness, sin SPEC); CONSTITUTION.md, AGENTS.md, docs/SDD-ENFORCEMENT.md (precedente de tooling sin spec).
 - Includes/excludes verificados: `.agents/skills/{analyze,clarify}/SKILL.md` como fuente; `.claude/skills/` y `.opencode/command/` regenerados y verificados con `--check`; ruff+mypy --strict sobre `tools/gen_skill_adapters.py` VERDE; `.gitattributes` fuerza LF; pipeline gana paso «skills multi-tool».
 - SSOTs afectados: docs/SKILLS-MULTITOOL.md (nuevo), .agents/skills/ (nuevo), 00-INDEX.md, tools/pipeline_local.sh, historial/sdd.md.
+
+---
+
+## 2026-07-03 — Iter 13: selección de adaptador de cliente (SPEC-013)
+
+**Scope:** implementación completa de SPEC-013-client-adapter-selection (permanece `draft`: toda spec requiere la prueba funcional manual del usuario antes de cerrarse, y está pendiente). La plataforma tecnológica del agente bajo prueba pasa a ser seleccionable por configuración (`AGENT_CLIENT_TYPE`): `remote_async` (cliente original, default, retrocompatible) o `sync_http` (nuevo adaptador síncrono REST con auth por header de llave).
+
+**Cambios:**
+- `adapters/platform_config.py`: lee `AGENT_CLIENT_TYPE` (FR-001) con requeridad de variables condicional al tipo activo (FR-006) y nuevas variables genéricas `ALT_CLIENT_URL`/`ALT_CLIENT_API_KEY` (FR-009). Tipo desconocido → `MissingConfigError` antes de cualquier red (SC-003).
+- `adapters/sync_agent_client.py` (nuevo): `SyncHttpAgentClient` cumple los 5 métodos del puerto `AgentClient` (FR-002). Postea el `form` plano en la raíz del body, sin envoltorio ni `id` (FR-010); colapsa el pipeline multi-etapa por pass-through genérico del color del bloque final, o `Rechazado` si el bloque viene `null` por corto-circuito (FR-011); simula el ciclo conversacional con `conversation_id` sintético + cache, transparente para `run_one` (FR-012); fallos técnicos (no-200, timeout, forma inesperada) → `conversation_id=None` → Indeterminado, nunca `Rechazado` (FR-013).
+- `adapters/agent_client_factory.py` (nuevo): `AgentClientFactory.create(config) -> AgentClient` centraliza el condicional de creación y la resolución del `CredentialProvider` (FR-005); expone `resolve_credentials` para la validación anticipada del dashboard.
+- `adapters/token_provider.py`: `StaticCredentialProvider` (llave fija, sin ciclo de token).
+- `dashboard/app.py` y `runner.py`: composition roots cableados vía factory; anotaciones relajadas al puerto `AgentClient` (FR-008); el runner reporta config inválida por stderr con exit 1 en vez de traceback.
+- `.env.example`: documenta `AGENT_CLIENT_TYPE` y las `ALT_CLIENT_*`.
+- `docs/ARCHITECTURE.md` (ADR-001 y sección adapters) reconciliado con la selección por configuración.
+
+**Decisiones tomadas:**
+- Discriminador del corto-circuito precisado en FR-011: bloque final **presente con `null`** (la clave existe en ambas ramas, verificado empíricamente); body sin la clave = forma inesperada → fallo técnico (FR-013). Evita mapear respuestas anómalas a `Rechazado` (Principio III).
+- `AGENT_ID` opcional para `sync_http` (metadata de corridas; fallback a la etiqueta del tipo de cliente).
+- FR-007 (SDKs de terceros) no se ejerció: el adaptador usa `requests`, ya presente; sin dependencias nuevas.
+
+**Deuda arrastrada / bloqueante de cierre:** SC-001..003 confirmados por la suite automatizada. Se agregó **SC-004** (prueba funcional manual del usuario, requisito de cierre de toda spec): validar contra la plataforma alternativa real (`AGENT_CLIENT_TYPE=sync_http` + `ALT_CLIENT_URL` + `ALT_CLIENT_API_KEY` en el entorno) y re-validar el camino original por defecto. Con el OK del usuario se tilda SC-004 y la spec pasa a `active`.
+
+**[SDD-Check] — 2026-07-03**
+- Specs leídas: SPEC-013-client-adapter-selection, SPEC-000-naming, SPEC-002-agent-client, SPEC-002b-message-builder, SPEC-003-classification-evaluator, CONSTITUTION.md, docs/ARCHITECTURE.md.
+- Includes/excludes verificados: fuera de alcance respetado (sin soporte multi-cliente por corrida; `MessageBuilder` intacto); naming agnóstico en identificadores nuevos; `requests` confinado a `adapters/`; pipeline local VERDE (constitución, trazabilidad, ruff, mypy --strict, naming, lint-imports, bandit, pytest).
+- SSOTs afectados: specs/SPEC-013-client-adapter-selection.md (draft, pend. validación funcional), specs/SPECS_REGISTRY.md, docs/ARCHITECTURE.md (ADR-001), .env.example, historial/sdd.md.

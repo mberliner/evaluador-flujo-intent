@@ -1,5 +1,4 @@
 # Declara aqui la SPEC-NNN vigente antes de editar src/. Una por linea.
 # El hook tools/sdd_gate.py (PreToolUse) bloquea la edicion de src/ si no hay
 # una SPEC valida declarada. Ver docs/SDD-ENFORCEMENT.md (Principio V).
-# Ejemplo:
-# SPEC-006-batch-suite
+SPEC-013-client-adapter-selection

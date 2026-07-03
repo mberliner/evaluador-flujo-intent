@@ -33,7 +33,7 @@ Este archivo lista todas las specs vigentes del proyecto. Cada spec describe una
 | SPEC-010-batch-trace | Traza de ejecución por caso en corridas batch | active | 10 rev.2026-06-07 | híbrido | [SPEC-010-batch-trace.md](SPEC-010-batch-trace.md) |
 | SPEC-011-agent-under-test | Selección del agente bajo prueba (perfiles) | draft | 11 | híbrido | [SPEC-011-agent-under-test.md](SPEC-011-agent-under-test.md) |
 | SPEC-012-translation-evaluator | Evaluador de traducción de intents | draft | 12 rev.2026-06-13 (3 US) | híbrido | [SPEC-012-translation-evaluator.md](SPEC-012-translation-evaluator.md) |
-| SPEC-013-client-adapter-selection | Selección de adaptador de cliente para plataformas alternativas | draft | 13 | híbrido | [SPEC-013-client-adapter-selection.md](SPEC-013-client-adapter-selection.md) |
+| SPEC-013-client-adapter-selection | Selección de adaptador de cliente para plataformas alternativas | draft | 13 impl.2026-07-03 pend.SC-004 (prueba funcional manual) | híbrido | [SPEC-013-client-adapter-selection.md](SPEC-013-client-adapter-selection.md) |
 
 ## Spec: 00-INDEX
 
