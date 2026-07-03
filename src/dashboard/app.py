@@ -15,10 +15,10 @@ from typing import Any, cast
 
 import streamlit as ui  # alias agnostico
 
+from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
-from src.adapters.remote_agent_client import RemoteAgentClient
-from src.adapters.token_provider import TokenError, TokenProvider
+from src.adapters.token_provider import TokenError
 from src.application.run_suite import execution_failure, run_one
 from src.build import message_builder
 from src.build.batch_loader import BatchLoadError, load_batch
@@ -34,6 +34,7 @@ from src.domain.metrics import (
     aggregate_suite_metrics,
     compute_suite_metrics,
 )
+from src.domain.ports import AgentClient
 from src.domain.result import SuiteResult, TestResult, aggregate_runs
 from src.domain.test_case import PALETA_CLASIFICACION, TestCase
 
@@ -170,22 +171,25 @@ def _build_case(
     )
 
 
-def _build_runtime() -> tuple[PlatformConfig, RemoteAgentClient, ClassificationEvaluator] | None:
-    """Construye config + cliente + evaluador, o muestra el error y devuelve None."""
+def _build_runtime() -> tuple[PlatformConfig, AgentClient, ClassificationEvaluator] | None:
+    """Construye config + cliente + evaluador, o muestra el error y devuelve None.
+
+    El adaptador concreto lo decide AgentClientFactory segun AGENT_CLIENT_TYPE
+    (SPEC-013 FR-005); este root solo conoce el puerto AgentClient (FR-008)."""
     try:
         config = PlatformConfig.from_env()
     except MissingConfigError as err:
         ui.error(f"Configuracion incompleta: {err}")
         return None
 
-    credentials = TokenProvider(config)
+    credentials = AgentClientFactory.resolve_credentials(config)
     try:
         credentials.get()
     except TokenError as err:
         ui.error(f"Auth fallo: {err}")
         return None
 
-    client = RemoteAgentClient(config, credentials, timeout_seconds=120)
+    client = AgentClientFactory.create(config, credentials=credentials, timeout_seconds=120)
     return config, client, ClassificationEvaluator()
 
 
@@ -501,7 +505,7 @@ def _run_batch_step(g: int) -> None:
 
     if pending:
         case = pending.pop(0)
-        client = cast("RemoteAgentClient", ui.session_state["batch_client"])
+        client = cast("AgentClient", ui.session_state["batch_client"])
         evaluator = cast(ClassificationEvaluator, ui.session_state["batch_evaluator"])
         try:
             outcome = run_one(

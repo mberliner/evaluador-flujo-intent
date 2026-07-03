@@ -14,10 +14,9 @@ import argparse
 import sys
 from pathlib import Path
 
+from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
-from src.adapters.platform_config import PlatformConfig
-from src.adapters.remote_agent_client import RemoteAgentClient
-from src.adapters.token_provider import TokenProvider
+from src.adapters.platform_config import MissingConfigError, PlatformConfig
 from src.application.run_suite import build_suite, execution_failure, run_batch, run_one
 from src.build.batch_loader import BatchLoadError, load_batch
 from src.domain.classification_evaluator import ClassificationEvaluator
@@ -201,9 +200,14 @@ def main(argv: list[str]) -> int:
         print("No hay casos válidos para ejecutar.", file=sys.stderr)
         return 1
 
-    config = PlatformConfig.from_env()
-    credentials = TokenProvider(config)
-    client = RemoteAgentClient(config, credentials, timeout_seconds=120)
+    # El adaptador concreto lo decide AgentClientFactory segun AGENT_CLIENT_TYPE
+    # (SPEC-013 FR-005). Config invalida falla antes de cualquier peticion (SC-003).
+    try:
+        config = PlatformConfig.from_env()
+    except MissingConfigError as exc:
+        print(f"Configuración inválida: {exc}", file=sys.stderr)
+        return 1
+    client = AgentClientFactory.create(config, timeout_seconds=120)
     evaluator = ClassificationEvaluator()
 
     print(f"Ejecutando {len(loaded.cases)} caso(s) (secuencial)...", flush=True)
