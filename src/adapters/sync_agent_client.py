@@ -9,13 +9,14 @@ de forma transparente para run_one, el dashboard y el runner.
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any
 
 import requests
 
 from src.adapters.platform_config import PlatformConfig
-from src.domain.agent_trace import AgentTrace
+from src.domain.agent_trace import AgentTrace, TraceStep
 from src.domain.ports import AgentResponse, CredentialProvider
 
 # Bloque de clasificacion final del pipeline de la plataforma
@@ -30,6 +31,64 @@ _FINAL_COLOR_KEY = "clasificacion"
 _SHORT_CIRCUIT_VERDICT = "Rechazado"
 
 _SYNTHETIC_ID_PREFIX = "sync-"
+
+# Resumen de bloque acotado, consistente con SPEC-007 FR-010 (FR-US3-005).
+_SUMMARY_MAX_CHARS = 800
+
+# Orden fijo del pipeline (FR-US3-003), independiente del orden de claves del
+# body. Cada tupla: (step_id agnostico y estable, clave del contrato del
+# proveedor confinada al adapter, etiqueta legible agnostica). Los bloques
+# reales llevan prefijo output_ (verificado 2026-07-03, FR-US1-011).
+_PIPELINE_STAGES: tuple[tuple[str, str, str], ...] = (
+    ("integridad", "output_integridad", "Integridad"),
+    ("impacto", "output_impacto", "Impacto"),
+    ("factibilidad", "output_factibilidad", "Factibilidad"),
+    ("fastgate", "output_fastgate", "Clasificación"),
+    ("redactor_mail", "output_redactor_mail", "Redacción de correo"),
+)
+
+
+def _has_content(value: Any) -> bool:
+    """El bloque llego con contenido no vacio (FR-US3-004), decidido solo por
+    presencia/contenido, sin leer campos internos (agnostico a la forma)."""
+    if value is None:
+        return False
+    if isinstance(value, (dict, list, str, tuple, set)):
+        return len(value) > 0
+    return True
+
+
+def _summarize(value: Any) -> str:
+    """Serializa el bloque tal cual venga, acotado (FR-US3-005); sin asumir claves."""
+    if value is None:
+        return ""
+    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    text = text.strip()
+    if len(text) > _SUMMARY_MAX_CHARS:
+        return text[:_SUMMARY_MAX_CHARS] + "…"
+    return text
+
+
+def _synthesize_steps(body: dict[str, Any]) -> tuple[TraceStep, ...]:
+    """Un TraceStep por etapa del pipeline, en orden fijo (FR-US3-003/004/005).
+
+    Estado por presencia/contenido: bloque con contenido -> completed; ausente,
+    null o vacio -> skipped. Nunca failed (un false de negocio no es fallo
+    tecnico, Principio III). Campos sin dato nativo (tiempos, child_flow) -> None.
+    """
+    steps: list[TraceStep] = []
+    for step_id, block_key, agent_name in _PIPELINE_STAGES:
+        block = body.get(block_key)
+        present = _has_content(block)
+        steps.append(
+            TraceStep(
+                step_id=step_id,
+                agent_name=agent_name,
+                status="completed" if present else "skipped",
+                output_summary=_summarize(block) if present else "",
+            )
+        )
+    return tuple(steps)
 
 
 def _collapse(data: Any) -> str | None:
@@ -70,6 +129,9 @@ class SyncHttpAgentClient:
         self._timeout = timeout_seconds
         # Cache de veredictos colapsados por conversation_id sintetico (FR-012).
         self._verdicts: dict[str, str] = {}
+        # Cache del body crudo del pipeline para sintetizar la traza (FR-US3-001),
+        # sin llamadas de red extra: get_trace opera sobre lo obtenido en send.
+        self._bodies: dict[str, dict[str, Any]] = {}
 
     def send(self, form: dict[str, Any], conversation_id: str | None = None) -> AgentResponse:
         """Invocacion completa en una llamada: postea el form plano (FR-010),
@@ -124,6 +186,7 @@ class SyncHttpAgentClient:
 
         synthetic_id = f"{_SYNTHETIC_ID_PREFIX}{uuid.uuid4().hex}"
         self._verdicts[synthetic_id] = verdict
+        self._bodies[synthetic_id] = data
         return AgentResponse(content=verdict, conversation_id=synthetic_id)
 
     def wait_for_completion(self, thread_id: str, timeout_seconds: int = 300) -> bool:
@@ -140,5 +203,19 @@ class SyncHttpAgentClient:
         return AgentResponse(content=content, conversation_id=thread_id)
 
     def get_trace(self, thread_id: str) -> AgentTrace:
-        """La plataforma no expone traza de sub-agentes: traza vacia (FR-002)."""
-        return AgentTrace(thread_id=thread_id, flow_id=None, overall_status="unknown", steps=())
+        """Sintetiza la traza desde el body cacheado en send (FR-US3-002).
+
+        Revisa la conducta de FR-002 para el cliente sincrono: de traza vacia a
+        traza sintetizada del pipeline. Sin llamadas de red: opera sobre lo
+        obtenido en send. Fallo tecnico o thread_id sin cache -> steps vacios,
+        sin excepcion (FR-US3-007, consistente con SPEC-007 FR-009).
+        """
+        body = self._bodies.get(thread_id)
+        if body is None:
+            return AgentTrace(thread_id=thread_id, flow_id=None, overall_status="unknown", steps=())
+        return AgentTrace(
+            thread_id=thread_id,
+            flow_id=None,
+            overall_status="completed",
+            steps=_synthesize_steps(body),
+        )

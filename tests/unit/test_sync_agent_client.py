@@ -237,10 +237,107 @@ def test_get_thread_messages_devuelve_vacio() -> None:
     assert _client(_StubSession([])).get_thread_messages("sync-1") == []
 
 
-def test_get_trace_devuelve_traza_vacia() -> None:
+# ---------------------------------------------------------------------------
+# FR-US3 — traza sintetizada del pipeline sincrono
+# ---------------------------------------------------------------------------
+
+_PIPELINE_ORDER = ("integridad", "impacto", "factibilidad", "fastgate", "redactor_mail")
+
+
+def test_get_trace_sin_cache_devuelve_traza_vacia() -> None:
+    # FR-US3-007: thread_id sin entrada cacheada -> steps vacios, sin excepcion.
     trace = _client(_StubSession([])).get_trace("sync-1")
     assert trace.thread_id == "sync-1"
     assert trace.steps == ()
+
+
+def test_fallo_tecnico_no_sintetiza_traza() -> None:
+    # FR-US3-007: un fallo tecnico (conversation_id=None) no deja cache -> vacia.
+    session = _StubSession([_StubResponse(422, {"detail": "invalido"})])
+    client = _client(session)
+    client.send(_FORM)  # conversation_id=None, no cachea body
+    assert client.get_trace("sync-desconocido").steps == ()
+
+
+def test_pipeline_completo_todos_los_pasos_completed_en_orden() -> None:
+    # SC-US3-001 / FR-US3-003 / FR-US3-006.
+    session = _StubSession([_StubResponse(200, _ok_body("Verde"))])
+    client = _client(session)
+    tid = client.send(_FORM).conversation_id or ""
+    trace = client.get_trace(tid)
+    assert tuple(s.step_id for s in trace.steps) == _PIPELINE_ORDER
+    assert all(s.status == "completed" for s in trace.steps)
+    assert trace.thread_id == tid
+    assert trace.flow_id is None
+    assert trace.overall_status == "completed"
+
+
+def test_orden_fijo_independiente_del_orden_de_claves() -> None:
+    # FR-US3-003: el orden es del pipeline, no del orden de claves del body.
+    body = {
+        "output_redactor_mail": {"enviado": True},
+        "output_fastgate": {"clasificacion": "Verde"},
+        "output_factibilidad": {"resultado": True},
+        "output_impacto": {"resultado": True},
+        "output_integridad": {"resultado": True},
+    }
+    session = _StubSession([_StubResponse(200, body)])
+    client = _client(session)
+    tid = client.send(_FORM).conversation_id or ""
+    assert tuple(s.step_id for s in client.get_trace(tid).steps) == _PIPELINE_ORDER
+
+
+def test_corto_circuito_marca_skipped_y_gate_que_corto_completed() -> None:
+    # SC-US3-002 / FR-US3-004: el gate que dio false quedo con contenido -> completed;
+    # las etapas no ejecutadas -> skipped; redactor_mail presente en ambas ramas -> completed.
+    session = _StubSession([_StubResponse(200, _SHORT_CIRCUIT_BODY)])
+    client = _client(session)
+    tid = client.send(_FORM).conversation_id or ""
+    by_id = {s.step_id: s.status for s in client.get_trace(tid).steps}
+    assert by_id["integridad"] == "completed"
+    assert by_id["impacto"] == "skipped"
+    assert by_id["factibilidad"] == "skipped"
+    assert by_id["fastgate"] == "skipped"
+    assert by_id["redactor_mail"] == "completed"
+
+
+def test_ningun_paso_es_failed() -> None:
+    # FR-US3-004: nunca failed, ni en corto-circuito (un false de negocio no es fallo tecnico).
+    session = _StubSession([_StubResponse(200, _SHORT_CIRCUIT_BODY)])
+    client = _client(session)
+    tid = client.send(_FORM).conversation_id or ""
+    assert all(s.status != "failed" for s in client.get_trace(tid).steps)
+
+
+def test_resumen_serializa_el_bloque_y_campos_de_tiempo_none() -> None:
+    # FR-US3-005: resumen del bloque tal cual; campos sin dato nativo -> None.
+    session = _StubSession([_StubResponse(200, _ok_body("Verde"))])
+    client = _client(session)
+    tid = client.send(_FORM).conversation_id or ""
+    steps = {s.step_id: s for s in client.get_trace(tid).steps}
+    fastgate = steps["fastgate"]
+    assert "clasificacion" in fastgate.output_summary
+    assert fastgate.duration_ms is None
+    assert fastgate.child_flow_id is None
+    assert fastgate.started_at is None
+    assert fastgate.completed_at is None
+    # Etapa skipped sin contenido: resumen vacio.
+    session2 = _StubSession([_StubResponse(200, _SHORT_CIRCUIT_BODY)])
+    client2 = _client(session2)
+    tid2 = client2.send(_FORM).conversation_id or ""
+    steps2 = {s.step_id: s for s in client2.get_trace(tid2).steps}
+    assert steps2["impacto"].output_summary == ""
+
+
+def test_resumen_se_trunca_a_800_caracteres() -> None:
+    # FR-US3-005: resumen acotado (consistente con SPEC-007 FR-010).
+    body = _ok_body("Verde")
+    body["output_integridad"] = {"detalle": "x" * 2000}
+    session = _StubSession([_StubResponse(200, body)])
+    client = _client(session)
+    tid = client.send(_FORM).conversation_id or ""
+    steps = {s.step_id: s for s in client.get_trace(tid).steps}
+    assert len(steps["integridad"].output_summary) <= 801  # 800 + elipsis
 
 
 # ---------------------------------------------------------------------------
