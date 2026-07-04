@@ -4,6 +4,15 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-07-04 — SPEC-006 FR-US1-008: fix índice por caso en progreso batch
+
+**Scope:** `src/dashboard/app.py` — `_run_batch_tick`  
+**Decisión:** `for r in done` usaba `len(done)` como índice, mostrando el mismo número para todos los casos completados en cada rerender. Corregido con `enumerate(done, 1)` para que cada fila tenga su índice fijo.  
+**Specs afectadas:** SPEC-006 (FR-US1-008 actualizado para explicitar que el índice es posición fija, no tamaño del slice).  
+**Deuda:** ninguna nueva.
+
+---
+
 ## 2026-07-04 — SPEC-008 FR-010: generate_metrics_report como caso de uso
 
 **Scope:** `src/domain/metrics.py`, nuevo `src/application/generate_metrics_report.py`, `src/domain/ports.py`, `src/runner.py`, `src/dashboard/app.py`, `tests/unit/test_runner.py`.
