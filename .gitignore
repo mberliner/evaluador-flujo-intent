@@ -14,6 +14,9 @@ htmlcov/
 # Override local de permisos de Claude Code (por-usuario, no versionar)
 .claude/settings.local.json
 
+# Estado de sesión SDD (local, no versionar — el gate lo lee del filesystem)
+.sdd/current-spec
+
 # Datos de entrada y artefactos: nunca se committean.
 # El CSV/JSON del workspace padre son referencia del schema; el usuario los
 # carga en runtime via la interfaz (un caso por pantalla en modo simple,

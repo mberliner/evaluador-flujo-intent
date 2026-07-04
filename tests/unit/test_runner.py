@@ -239,7 +239,9 @@ def test_format_metrics_report_includes_matrix_and_summary() -> None:
     run = SuiteResult.create(
         (_res("c1", "Verde", "Verde"), _res("c2", "Rojo", None)), agent_id="agent-x"
     )
-    report = runner.format_metrics_report(compute_suite_metrics(run), "Titulo X")
+    from src.domain.metrics import format_metrics_report
+
+    report = format_metrics_report(compute_suite_metrics(run), "Titulo X")
     assert report.startswith("# Titulo X")
     assert "esperado;Verde;Amarillo;Rojo;Negro;Rechazado;Sin clasificación" in report
     assert "# Resumen de estadística" in report

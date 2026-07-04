@@ -17,6 +17,7 @@ from pathlib import Path
 from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
+from src.application.generate_metrics_report import generate_metrics_report
 from src.application.run_suite import build_suite, execution_failure, run_batch, run_one
 from src.build.batch_loader import BatchLoadError, load_batch
 from src.domain.classification_evaluator import ClassificationEvaluator
@@ -27,40 +28,6 @@ from src.domain.test_case import PALETA_CLASIFICACION
 # Los use-cases de orquestación viven en src/application/run_suite.py (ADR-005); el
 # runner es composition root y entrypoint headless. Se re-exportan por compatibilidad.
 __all__ = ["build_suite", "execution_failure", "main", "run_batch", "run_one"]
-
-
-_REPORT_SEPARATOR = ";"
-
-
-def format_metrics_report(metrics: SuiteMetrics, title: str) -> str:
-    """Arma un reporte tabular (delimitado por ';') de la matriz de confusión más
-    un resumen de estadística. Función pura: no imprime ni hace I/O."""
-    cols = (*PALETA_CLASIFICACION, SIN_CLASIFICACION)
-    sep = _REPORT_SEPARATOR
-
-    def num(value: float | None) -> str:
-        return "N/A" if value is None else f"{value:.4f}"
-
-    lines = [f"# {title}"]
-    lines.append(sep.join(["esperado", *cols]))
-    for esperado in PALETA_CLASIFICACION:
-        lines.append(sep.join([esperado, *(str(metrics.confusion[esperado][c]) for c in cols)]))
-
-    lines.append("")
-    lines.append("# Resumen de estadística")
-    lines.append(sep.join(["metrica", "valor"]))
-    lines.append(sep.join(["total_casos", str(metrics.total)]))
-    lines.append(sep.join(["accuracy_global", num(metrics.accuracy_global)]))
-    lines.append(sep.join(["sin_clasificacion_casos", str(metrics.sin_clasificacion_count)]))
-    lines.append(sep.join(["sin_clasificacion_ratio", num(metrics.sin_clasificacion_ratio)]))
-
-    lines.append("")
-    lines.append("# Accuracy por clase")
-    lines.append(sep.join(["clase", "accuracy"]))
-    for c in PALETA_CLASIFICACION:
-        lines.append(sep.join([c, num(metrics.accuracy_por_clase[c])]))
-
-    return "\n".join(lines)
 
 
 def _md_table(headers: list[str], rows: list[list[str]]) -> list[str]:
@@ -137,7 +104,7 @@ def _report_total_metrics(out_dir: str) -> int:
     title = f"Matriz de confusión — total ({len(runs)} corrida(s), {metrics.total} caso(s))"
     print(format_metrics_markdown(metrics, title))
     try:
-        path = repo.save_metrics_report(format_metrics_report(metrics, title))
+        path = generate_metrics_report(repo, title)
         print(f"\nReporte CSV guardado en: {path}")
     except RunPersistenceError as exc:
         print(f"Reporte mostrado pero NO se pudo guardar el CSV: {exc}", file=sys.stderr)

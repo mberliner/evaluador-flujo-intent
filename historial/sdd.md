@@ -4,6 +4,22 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-07-04 — SPEC-008 FR-010: generate_metrics_report como caso de uso
+
+**Scope:** `src/domain/metrics.py`, nuevo `src/application/generate_metrics_report.py`, `src/domain/ports.py`, `src/runner.py`, `src/dashboard/app.py`, `tests/unit/test_runner.py`.
+
+**Decisiones tomadas:**
+
+- **`format_metrics_report` se mueve a `domain/`**: era una función pura atrapada en `runner.py` (entry point CLI). Al moverla a `src/domain/metrics.py` queda donde corresponde según la arquitectura en capas.
+- **Caso de uso en `application/`**: la orquestación `aggregate_suite_metrics → format_metrics_report → repo.save_metrics_report` vive en `src/application/generate_metrics_report.py`, compartido entre el runner headless y el dashboard.
+- **Puerto, no adaptador concreto**: el caso de uso recibe `RunRepository` (protocolo de `domain/ports.py`), no `FileRunRepository`. Se extendió el protocolo con `load_all` y `save_metrics_report` para completar el contrato.
+- **Dashboard actualizado (FR-010)**: `_render_run_stats_control` llama al caso de uso tras `regenerate_run_stats`, dejando `estadistica-corridas.csv` y `estadistica-matriz.csv` siempre sincronizados en la misma operación de UI.
+- **Runner simplificado**: `_report_total_metrics` delega el guardado CSV al caso de uso en lugar de orquestar los tres pasos a mano.
+
+**Verificación:** Pipeline local VERDE 10/10 (286 tests). Sin tests nuevos (la función ya tenía cobertura; el caso de uso es una composición directa de funciones ya cubiertas).
+
+---
+
 ## 2026-07-03 — SPEC-013 User Story 3: traza sintetizada del pipeline síncrono
 
 **Scope: toca sólo `src/adapters/sync_agent_client.py` + tests + spec.** La respuesta `200` de la plataforma síncrona ya trae las etapas del pipeline (`output_integridad → output_impacto → output_factibilidad → output_fastgate → output_redactor_mail`), pero el adaptador las descartaba al colapsar sólo el color (FR-US1-011), dejando el visor "Traza de ejecución" (SPEC-007) vacío para `sync_http`. Se sintetiza un `AgentTrace` desde esa respuesta ya obtenida, sin llamadas de red extra, reusando el modelo y el visor de SPEC-007 sin modificarlos.

@@ -19,6 +19,7 @@ from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
 from src.adapters.token_provider import TokenError
+from src.application.generate_metrics_report import generate_metrics_report
 from src.application.run_suite import execution_failure, run_one
 from src.build import message_builder
 from src.build.batch_loader import BatchLoadError, load_batch
@@ -726,6 +727,16 @@ def _render_run_stats_control() -> None:
         ui.success(f"Estadística de corridas regenerada en: `{path}`")
 
         runs = repo.load_all()
+        if runs:
+            matriz_title = (
+                f"Matriz de confusión — total ({len(runs)} corrida(s), "
+                f"{sum(r.total for r in runs)} caso(s))"
+            )
+            try:
+                matriz_path = generate_metrics_report(repo, matriz_title)
+                ui.success(f"Matriz de confusión actualizada en: `{matriz_path}`")
+            except RunPersistenceError as err:
+                ui.warning(f"No se pudo actualizar estadistica-matriz.csv: {err}")
         overall = aggregate_runs(runs)
         ui.markdown("**Total general (todos los casos de todas las corridas):**")
         cols = ui.columns(4)

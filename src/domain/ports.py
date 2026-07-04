@@ -82,3 +82,11 @@ class RunRepository(Protocol):
     def load(self, run_id: str) -> SuiteResult:
         """Reconstruye una corrida persistida por su run_id."""
         ...
+
+    def load_all(self) -> list[SuiteResult]:
+        """Devuelve todas las corridas persistidas."""
+        ...
+
+    def save_metrics_report(self, content: str) -> str:
+        """Persiste el reporte CSV de métricas y devuelve la ruta escrita."""
+        ...

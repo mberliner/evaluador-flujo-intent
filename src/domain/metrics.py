@@ -19,6 +19,42 @@ from src.domain.test_case import PALETA_CLASIFICACION
 # Columna de la matriz para casos cuya respuesta no produjo clasificación.
 SIN_CLASIFICACION = "Sin clasificación"
 
+_REPORT_SEPARATOR = ";"
+
+
+def format_metrics_report(metrics: SuiteMetrics, title: str) -> str:
+    """Genera el reporte CSV (delimitado por ';') de la matriz de confusión.
+
+    Función pura: no imprime ni hace I/O. Usada por el caso de uso
+    generate_metrics_report (application) tanto desde el dashboard como el CLI.
+    """
+    cols = (*PALETA_CLASIFICACION, SIN_CLASIFICACION)
+    sep = _REPORT_SEPARATOR
+
+    def num(value: float | None) -> str:
+        return "N/A" if value is None else f"{value:.4f}"
+
+    lines = [f"# {title}"]
+    lines.append(sep.join(["esperado", *cols]))
+    for esperado in PALETA_CLASIFICACION:
+        lines.append(sep.join([esperado, *(str(metrics.confusion[esperado][c]) for c in cols)]))
+
+    lines.append("")
+    lines.append("# Resumen de estadística")
+    lines.append(sep.join(["metrica", "valor"]))
+    lines.append(sep.join(["total_casos", str(metrics.total)]))
+    lines.append(sep.join(["accuracy_global", num(metrics.accuracy_global)]))
+    lines.append(sep.join(["sin_clasificacion_casos", str(metrics.sin_clasificacion_count)]))
+    lines.append(sep.join(["sin_clasificacion_ratio", num(metrics.sin_clasificacion_ratio)]))
+
+    lines.append("")
+    lines.append("# Accuracy por clase")
+    lines.append(sep.join(["clase", "accuracy"]))
+    for c in PALETA_CLASIFICACION:
+        lines.append(sep.join([c, num(metrics.accuracy_por_clase[c])]))
+
+    return "\n".join(lines)
+
 
 @dataclass(frozen=True, slots=True)
 class SuiteMetrics:
