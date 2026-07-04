@@ -509,8 +509,8 @@ def _run_batch_step(g: int) -> None:
         (len(done) / total) if total else 0.0,
         text=f"{len(done)}/{total} caso(s) completado(s)",
     )
-    for r in done:
-        ui.markdown(f"- {len(done)}/{total} · `{r.case_id}` → **{r.verdict}**")
+    for i, r in enumerate(done, 1):
+        ui.markdown(f"- {i}/{total} · `{r.case_id}` → **{r.verdict}**")
 
     if ui.button("Frenar y guardar lo hecho", key=f"batch_stop_{g}"):
         _finalize_batch(stopped=True)
