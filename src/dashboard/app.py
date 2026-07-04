@@ -857,15 +857,22 @@ def main() -> None:
             else:
                 _load_and_store(raw)
 
-    ui.subheader("Evaluar un caso individual")
-    with ui.form(f"single_case_form_{g}", clear_on_submit=False):
-        case_id, nombre = _render_identificacion(g)
-        intent = _render_intent(g)
-        declaracion = _render_declaracion(g)
-        datos = _render_datos(g)
-        contexto = _render_contexto_extra(g)
-        clasificacion, marcadores = _render_esperado(g)
-        validate = ui.form_submit_button("Validar caso")
+        stored_in_expander = ui.session_state.get("case_validated")
+        if stored_in_expander is not None:
+            ui.success("Caso cargado y validado. Podés enviarlo desde aquí.")
+            if ui.button("Enviar al agente", key="send_from_file_expander"):
+                _send_and_evaluate(cast(TestCase, stored_in_expander))
+
+    form_expanded = ui.session_state.get("case_validated") is None
+    with ui.expander("Evaluar un caso individual", expanded=form_expanded):  # noqa: SIM117
+        with ui.form(f"single_case_form_{g}", clear_on_submit=False):
+            case_id, nombre = _render_identificacion(g)
+            intent = _render_intent(g)
+            declaracion = _render_declaracion(g)
+            datos = _render_datos(g)
+            contexto = _render_contexto_extra(g)
+            clasificacion, marcadores = _render_esperado(g)
+            validate = ui.form_submit_button("Validar caso")
 
     if validate:
         try:

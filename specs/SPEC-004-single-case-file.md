@@ -46,6 +46,7 @@ Como usuario que ya tiene casos en formato modelo, quiero **cargar un caso indiv
 - **FR-005**: MUST: El dashboard ofrece la carga por archivo como alternativa al formulario, dejando ambos caminos disponibles en modo simple.
 - **FR-006**: MUST: El loader acepta archivos en el **formato del schema oficial del agente** (`{"form": {...}}` con `tipo_intent`/`datos_requeridos` anidados, el inverso del payload que produce [[SPEC-002b-message-builder]] contra `FI_Orquestador_Input.schema.json`). Adicionalmente, por conveniencia (tests y entrada manual), acepta el **formato plano** (campos de `TestCase` en la raíz). Ambos producen el mismo `TestCase`. El shape anidado no se define aquí: es el contrato de SPEC-002b / el schema; esta spec solo gobierna su parseo de entrada.
 - **FR-007**: MUST: Cuando el archivo no incluye `clasificacion_esperada` (caso típico de los archivos en formato puro del agente, donde el ground truth no es parte del payload), el dashboard la solicita al usuario —selectbox con `PALETA_CLASIFICACION`— y la inyecta antes de construir el `TestCase`. La carga no se habilita hasta que el usuario elige una clasificación válida. `clasificacion_esperada` no se infiere ni se deja vacía.
+- **FR-008**: SHOULD: Una vez que el caso está cargado y validado, el expander "Cargar un caso desde archivo JSON" expone el botón "Enviar al agente" directamente dentro de sí mismo, permitiendo enviar sin cerrar el expander ni hacer scroll hasta la sección de envío.
 
 ## Key Entities
 
@@ -76,6 +77,7 @@ Como usuario que ya tiene casos en formato modelo, quiero **cargar un caso indiv
 | SC-001 | tests unitarios de carga de caso válido (cubierto por FR-001) |
 | SC-002 | test que parsea por archivo y compara `TestCase` resultante vs. construcción directa |
 | SC-003 | tests unitarios de archivo inválido (cubierto por FR-001) |
+| FR-008 | botón "Enviar al agente" dentro del expander de carga por archivo en `src/dashboard/app.py` (bloque `stored_in_expander`); verificación funcional |
 | SC-004 | verificación funcional en `src/dashboard/app.py` (cubierto por FR-005) |
 
 ## Fuera de alcance
@@ -85,6 +87,8 @@ Como usuario que ya tiene casos en formato modelo, quiero **cargar un caso indiv
 - Traza del agente → notas `SPEC-007` (fuera de secuencia activa).
 
 ## Historial
+
+- **2026-07-04** — FR-008 agregado: botón "Enviar al agente" disponible dentro del expander de carga por archivo, evitando scroll hasta la sección de envío. Implementado en `src/dashboard/app.py` (bloque `stored_in_expander` al final del expander).
 
 - **2026-05-25** — Spec creada en formato híbrido. Re-corte del roadmap: el viejo SPEC-004-batch-input se difiere a SPEC-006; esta spec toma el slice "carga unitaria por archivo" que antes no existía. `[NEEDS CLARIFICATION]` embebidos a resolver al implementar (decisión del usuario, 2026-05-25).
 - **2026-05-25** — Implementación inicial: `src/build/case_loader.py` (`load()` + `CaseLoadError`), integración en `src/dashboard/app.py` (expander "Cargar caso desde archivo JSON"), 19 tests unitarios incluyendo 3 fixtures reales. Decisiones tomadas: lista con múltiples casos → toma el primero silenciosamente; campos extra → ignorados; id ausente o vacío → auto-generado.

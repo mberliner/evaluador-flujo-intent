@@ -43,3 +43,11 @@ repos:
         additional_dependencies: [import-linter]
         files: ^src/
         pass_filenames: false
+
+      - id: sdd-reset
+        name: sdd-reset (limpia current-spec post-commit)
+        entry: python tools/sdd_reset.py
+        language: python
+        stages: [post-commit]
+        always_run: true
+        pass_filenames: false

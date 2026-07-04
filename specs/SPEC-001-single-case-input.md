@@ -81,11 +81,12 @@ Los Protocol son contratos, no exigen implementación todavía.
 
 Página con un formulario que reproduce los campos del `TestCase`. Comportamiento:
 
-1. Render del formulario con campos agrupados (identificación, intent, declaración, datos, contexto, esperado).
-2. Botón **"Validar caso"** construye un `TestCase`; si falla la validación, muestra el error.
-3. Si valida OK, muestra el payload resultante (JSON serializado del form) y un banner verde "Caso listo para envío".
-4. **No** envía al agente en esta iteración (eso es [[SPEC-002-agent-client]]).
-5. El framework UI concreto se encapsula dentro de este módulo; ningún identificador expuesto contiene el nombre del framework (ver [[SPEC-000-naming]]).
+1. La sección "Evaluar un caso individual" es un expander colapsable. Expandido por defecto mientras no hay caso validado; el usuario puede colapsarlo una vez validado para exponer la sección de envío y resultado sin scroll.
+2. Campos agrupados internamente (identificación, intent, declaración, datos, contexto, esperado).
+3. Botón **"Validar caso"** construye un `TestCase`; si falla la validación, muestra el error.
+4. Si valida OK, muestra el payload resultante (JSON serializado del form) y un banner verde "Caso listo para envío".
+5. **No** envía al agente en esta iteración (eso es [[SPEC-002-agent-client]]).
+6. El framework UI concreto se encapsula dentro de este módulo; ningún identificador expuesto contiene el nombre del framework (ver [[SPEC-000-naming]]).
 
 ## Criterios de aceptación
 
@@ -122,6 +123,8 @@ Página con un formulario que reproduce los campos del `TestCase`. Comportamient
 - Persistencia entre sesiones → [[SPEC-005-run-persistence]]
 
 ## Historial
+
+- **2026-07-04** — Entrada de caso individual convertida a expander colapsable. Expandido por defecto mientras no hay caso validado; el usuario puede colapsarlo tras validar para exponer la sección de resultado sin scroll.
 
 - **Iter 1** — Spec creada. Origen del schema: referencia tomada del JSON modelo del workspace padre.
 - **rev.2026-05-25** — El schema oficial del agente se incorporó al proyecto en `schemas/FI_Orquestador_Input.schema.json` (versionado). Agregado `datos_otros_mensaje: str` al modelo tras comparar `TestCase` contra el schema oficial. Ver SPEC-002b.
