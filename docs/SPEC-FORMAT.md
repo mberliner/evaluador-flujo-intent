@@ -55,6 +55,8 @@ El corte se acordó el **2026-05-25** al redactar SPEC-002b y SPEC-003b — las 
 **Depende de:** [[SPEC-NNN-slug]], ...          ← omitir si no hay
 **Relacionada con:** [[SPEC-NNN-slug]], ...     ← omitir si no hay
 
+**Resumen:** [3-4 líneas: qué entrega, User Stories con prioridad, estado de cierre]
+
 ## User Story (Priority: P1 | P2 | P3)
 
 [Quién necesita qué y por qué — en lenguaje de negocio, no técnico]
@@ -126,6 +128,8 @@ Esqueleto:
 
 [header global: Estado / Iter / Formato / Depende de / Relacionada con]
 
+**Resumen:** [3-4 líneas: qué entrega, User Stories con prioridad, estado de cierre]
+
 ---
 
 ## User Story 1 — Título (Priority: PX)
@@ -157,11 +161,35 @@ Referencia viva: [specs/SPEC-010-batch-trace.md](../specs/SPEC-010-batch-trace.m
 
 ---
 
+## Convenciones de compacidad
+
+Adoptadas el **2026-07-05** (piloto: reescritura editorial de SPEC-013, −46% de palabras sin cambio normativo). Objetivo: specs más rápidas de leer sin perder trazabilidad ni precisión. La calidad de una spec vive en sus IDs, reglas y mapeos — no en la longitud de sus párrafos. Son aplicación directa del **Principio VI (SSOT único por tema)** de `CONSTITUTION.md`.
+
+1. **Resumen ejecutivo.** Toda spec lleva, inmediatamente después del header, un bloque `**Resumen:**` de 3-4 líneas: qué entrega, qué User Stories contiene (con prioridad) y estado de cierre. Es lo único que un lector necesita para decidir si sigue leyendo.
+2. **Regla separada de justificación en los FR.** Un FR enuncia su regla normativa en 1-3 oraciones. La evidencia empírica, el razonamiento y las consecuencias deliberadas van en una **nota indentada** (`>`) debajo del FR, o en `Clarifications` si nacieron de una sesión de preguntas. El implementador lee la regla; el auditor lee la nota.
+3. **Contratos externos en sección única.** Cuando varios FR dependen del contrato de un sistema externo (payload, forma de respuesta, semántica de errores), el detalle se describe **una sola vez** en una sección propia (ej. «Contrato verificado de …», indicando qué está verificado empíricamente y qué no se sondeó) y los FR la referencian. Nunca se repite el detalle del contrato en varios FR, Clarifications e Historial.
+4. **Invariantes constitucionales en una línea.** Una spec no redeclara un principio constitucional (naming, capas, etc.) como FR de cuerpo entero: si la numeración existente ya tiene ese FR, se conserva su ID reducido a una línea (`MUST: invariante [[SPEC-000-naming]] …`); en specs nuevas no se crea el FR salvo que exista una **excepción o matiz** propio de la spec. La garantía real es el linter del pipeline, no la frase repetida.
+5. **Coverage mapping agrupado.** Varios requisitos verificados por el mismo artefacto comparten fila (`FR-US1-001, FR-US1-006 | test_x.py`). Los IDs se escriben **completos y literales** — `check_traceability.py` no soporta rangos ni abreviaturas (`FR-US1-001..007` no cuenta como cobertura).
+6. **Historial de qué + por qué, 2-4 líneas por entrada.** El Historial registra la decisión y su motivación, no el detalle de implementación: ese detalle vive en los FR vigentes (specs vivas), en los commits y en `historial/sdd.md`. Si una entrada repite lo que ya dice un FR actualizado, apunta al FR.
+
+Referencia viva del formato compacto: [specs/SPEC-013-client-adapter-selection.md](../specs/SPEC-013-client-adapter-selection.md) (reescrita el 2026-07-05). Las demás specs se migran oportunísticamente: al tocar una spec por otro motivo, se aplica la compactación en el mismo cambio; no se abre una migración masiva dedicada.
+
+---
+
 ## Reglas de redacción
 
 ### Identificadores y naming
 
 Toda spec respeta **SPEC-000-naming**: los nombres de módulos, clases y funciones que aparecen en la spec no pueden contener referencias a proveedor, framework UI, formato o protocolo de auth. Si la spec menciona una implementación concreta, hacerlo en el cuerpo o en el historial, nunca en el título ni en los FR/SC.
+
+### User Stories: mirada de usuario
+
+- La narrativa se redacta **desde la perspectiva de un usuario real** (operador de la suite, evaluador de calidad, analista), nunca de un componente del sistema. El rol es alguien que obtiene valor; el beneficio es observable en su trabajo, no un detalle interno.
+  - Bien: "Como operador de la suite, quiero configurar contra qué plataforma se ejecutan mis pruebas, para evaluar al mismo agente cuando sea migrado a otro proveedor."
+  - Mal: "Como `AgentClientFactory`, quiero instanciar el adaptador según `AGENT_CLIENT_TYPE`, para desacoplar los composition roots."
+- La narrativa no menciona clases, módulos, variables de entorno ni nombres de archivo: ese vocabulario pertenece a los FR y Key Entities. Si la historia solo puede contarse en términos técnicos, probablemente es un FR de otra historia, no una User Story.
+- **Why this priority** también se argumenta en términos de valor o bloqueo para el usuario/negocio ("sin esto no se puede auditar contra qué plataforma corrió una evaluación"), no de conveniencia interna del código.
+- El **Independent Test** sí puede ser técnico: es la receta de validación, no la narrativa.
 
 ### User Stories y numeración
 
@@ -245,6 +273,8 @@ Copiar este bloque completo al crear una spec nueva. Reemplazar los placeholders
 **Formato:** Híbrido
 **Depende de:** [[SPEC-NNN-slug]]
 **Relacionada con:** [[SPEC-NNN-slug]]
+
+**Resumen:** [3-4 líneas: qué entrega, User Stories con prioridad, estado de cierre]
 
 ## User Story (Priority: PX)
 
