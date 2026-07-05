@@ -4,6 +4,22 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-07-05 — Compactación de las specs restantes (SPEC-006, SPEC-012, SPEC-002)
+
+**Scope:** editorial, sin tocar `src/`: `specs/SPEC-006-batch-suite.md`, `specs/SPEC-012-translation-evaluator.md`, `specs/SPEC-002-agent-client.md`. Salda la deuda declarada en la entrada anterior (se aplicó como migración pedida por el usuario, no oportunística).
+
+**Decisiones tomadas:**
+
+- Las tres reescrituras son **sin cambio normativo**: IDs de FR/SC, contratos y semántica intactos; pipeline VERDE 10/10 (286 tests).
+- **SPEC-006** (3.980 → 3.498 palabras): resumen ejecutivo, reglas separadas de justificaciones (notas `>`), invariantes de naming a una línea, coverage agrupado (FR+SC que comparten artefacto), historial podado y reordenado cronológicamente; el mapeo de renumeración FR-viejo→FR-USn queda referido al commit de la migración 2026-05-27.
+- **SPEC-012** (4.191 → 3.984): extraída la sección **«Contrato del caso de traducción»** como referencia única del modelo de caso (antes repetido entre FR-US1-001, FR-US2-002, FR-US3-002 y Key Entities); FRs adelgazados con notas.
+- **SPEC-002** (1.563 → 1.433): resumen ejecutivo, narrativa de métodos condensada en notas, historial podado. Formato casero pre-híbrido conservado (migrarlo a híbrido sería cambio de fondo, no editorial).
+- Ganancia menor que el piloto (−12%/−5%/−8% vs. −46% de SPEC-013): estas specs tenían menos duplicación; el valor principal es estructural (resumen, contrato único, regla/nota).
+
+**Deuda:** ninguna nueva; la deuda de formato verboso queda saldada.
+
+---
+
 ## 2026-07-05 — Convenciones de compacidad de specs + Principio VI (SSOT único por tema)
 
 **Scope:** cambio de método SDD, sin tocar `src/`: `CONSTITUTION.md` (0.5.2 → 0.6.0), `docs/SPEC-FORMAT.md`, `specs/SPEC-013-client-adapter-selection.md` (piloto).
