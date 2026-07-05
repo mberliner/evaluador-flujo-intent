@@ -4,6 +4,21 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-07-05 — Convenciones de compacidad de specs + Principio VI (SSOT único por tema)
+
+**Scope:** cambio de método SDD, sin tocar `src/`: `CONSTITUTION.md` (0.5.2 → 0.6.0), `docs/SPEC-FORMAT.md`, `specs/SPEC-013-client-adapter-selection.md` (piloto).
+
+**Decisiones tomadas:**
+
+- **Piloto de compactación sobre SPEC-013:** reescritura editorial de 6.573 → 3.533 palabras (−46%) **sin cambio normativo** (IDs y semántica de FR/SC intactos). Palancas: resumen ejecutivo, sección única «Contrato verificado de la plataforma síncrona» (el detalle estaba repetido en FR-US1-010/011, FR-US3-003, Clarifications e Historial), regla separada de justificación en los FR (notas `>`), invariantes constitucionales reducidos a una línea, coverage mapping agrupado, historial podado a qué + por qué.
+- **Convenciones formalizadas en `docs/SPEC-FORMAT.md`** (sección «Convenciones de compacidad», 6 reglas). Migración de las demás specs: **oportunística** — al tocar una spec por otro motivo se compacta en el mismo cambio; sin migración masiva dedicada.
+- **Enmienda constitucional (MINOR → 0.6.0): nuevo Principio VI — SSOT único por tema.** El invariante ya operaba disperso (AGENTS.md, SPEC-FORMAT, delegaciones tipo SPEC-013→SPEC-005) sin casa formal; la compactación es en el fondo enforcement de este principio. Enforcement: revisión editorial + `/analyze`; detalle en `00-INDEX.md` y `docs/SPEC-FORMAT.md`.
+- **Límite del checker documentado:** `check_traceability.py` exige IDs literales completos en el coverage mapping; los rangos (`FR-US1-001..007`) no cuentan como cobertura. Se documenta en la convención 5 en lugar de extender el tool.
+
+**Deuda:** las specs pesadas restantes (SPEC-006, SPEC-012, SPEC-002) siguen en formato verboso hasta que un cambio las toque.
+
+---
+
 ## 2026-07-04 — SPEC-006 FR-US1-008: fix índice por caso en progreso batch
 
 **Scope:** `src/dashboard/app.py` — `_run_batch_tick`  
