@@ -1,6 +1,6 @@
 # Constitución del proyecto
 
-**Versión:** 0.5.2 | **Ratificada:** 2026-05-26 | **Última enmienda:** 2026-06-13
+**Versión:** 0.6.0 | **Ratificada:** 2026-05-26 | **Última enmienda:** 2026-07-05
 
 ## Preámbulo
 
@@ -44,6 +44,13 @@ Toda capacidad del **producto** está descrita por una spec registrada antes de 
 
 - **Enforcement:** `tools/check_traceability.py` (pipeline) + `tools/sdd_gate.py` (hook PreToolUse sobre src/)
 - **Detalle:** `specs/SPECS_REGISTRY.md`, `docs/SDD-ENFORCEMENT.md`
+
+### VI. SSOT único por tema
+
+Toda pieza de información normativa —regla, esquema, contrato, convención— vive en exactamente un documento, su SSOT; cualquier otro documento que la necesite la referencia, nunca la reproduce. El mismo invariante rige dentro de una spec: un detalle compartido por varios requisitos se declara una vez y los requisitos lo referencian. Los principios de esta constitución no se redeclaran como requisitos de cuerpo entero en las specs: se citan con un link. Qué documento es SSOT de qué tema es detalle operativo: vive en el índice.
+
+- **Enforcement:** revisión editorial en code review + `docs/playbooks/analyze.md` (consistencia spec↔SSOT)
+- **Detalle:** `00-INDEX.md`, `docs/SPEC-FORMAT.md`
 
 ## Governance
 
