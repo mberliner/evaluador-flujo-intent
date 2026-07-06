@@ -4,6 +4,20 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
+## 2026-07-05 — Compactación segunda tanda (SPEC-010, SPEC-009, SPEC-011)
+
+**Scope:** editorial, sin tocar `src/`: `specs/SPEC-010-batch-trace.md`, `specs/SPEC-009-parallel-execution.md`, `specs/SPEC-011-agent-under-test.md`. Completa la revisión de candidatas detectadas tras la tanda anterior; **sin cambio normativo** en las tres (IDs de FR/SC, decisiones y semántica intactos).
+
+**Decisiones tomadas:**
+
+- **SPEC-010** (la más densa del repo): el «Hallazgo de correlación» queda como referencia única — su consecuencia estaba re-explicada en FR-US1-004, en los Why-priority, en Assumptions y en Historial; ahora la sección concentra también el descarte de backfill y de re-fetch. Las decisiones de diseño (traza embebida, captura única/opción C) pasan a notas `>` bajo FR-US2-001/007. Coverage agrupado, historial podado.
+- **SPEC-009**: Resumen ejecutivo, coverage agrupado FR+SC (mismo artefacto), invariante de naming a una línea, entrada de historial 2026-06-09 comprimida (el mapeo de renumeración queda referido al commit).
+- **SPEC-011**: Resumen ejecutivo; justificaciones de capa/typing/reconciliaciones movidas a notas `>` (FR-002/011/014); FR-009 a una línea; IDs `SC-001..SC-003` del coverage escritos literales (convención 5).
+
+**Deuda:** ninguna nueva. Las specs restantes (SPEC-007, 008, 004, 005, 001, 003, 003b, 002b, 000) están en tamaño razonable; sólo les falta el bloque `**Resumen:**`, que se agrega oportunísticamente.
+
+---
+
 ## 2026-07-05 — Compactación de las specs restantes (SPEC-006, SPEC-012, SPEC-002)
 
 **Scope:** editorial, sin tocar `src/`: `specs/SPEC-006-batch-suite.md`, `specs/SPEC-012-translation-evaluator.md`, `specs/SPEC-002-agent-client.md`. Salda la deuda declarada en la entrada anterior (se aplicó como migración pedida por el usuario, no oportunística).
