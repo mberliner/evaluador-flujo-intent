@@ -6,6 +6,8 @@
 **Depende de:** [[SPEC-006-batch-suite]], [[SPEC-002-agent-client]], [[SPEC-003-classification-evaluator]]
 **Relacionada con:** [[SPEC-008-suite-metrics]], [[SPEC-005-run-persistence]]
 
+**Resumen:** Agrega ejecución paralela de casos con concurrencia configurable (`ConcurrencyLimit`, default 1 = secuencial) sobre el modelo batch de [[SPEC-006-batch-suite]], sin cambiar el esquema de resultados. Dos cortes: **US1** concurrencia en el runner headless con drenaje ante parada manual (P2); **US2** concurrencia en el dashboard reconciliada con el control "Frenar" (P3). En `draft`, pendiente de implementación; habilitarla exige antes resolver la correlación de trazas bajo paralelismo (ver [[SPEC-010-batch-trace]]).
+
 ## Clarifications
 
 ### Session 2026-06-09
@@ -72,21 +74,16 @@ Como usuario quiero ejecutar una suite de N casos **desde el runner headless** c
 
 | Requisito | Cubierto por |
 |-----------|-------------|
-| FR-US1-001, FR-US1-002 | coordinador de ejecución en `src/application/` + test unitario con stub del agente y contador de llamadas concurrentes |
-| FR-US1-003 | test de regresión: misma suite, `concurrency=1` vs. secuencial de SPEC-006 |
-| FR-US1-004 | test unitario: valores inválidos de `concurrency` → excepción antes de cualquier envío |
+| FR-US1-001, FR-US1-002, SC-US1-001 | coordinador de ejecución en `src/application/` + test unitario con stub del agente que registra el máximo de llamadas concurrentes observado (máximo ≤ K) |
+| FR-US1-003, SC-US1-002 | tests de regresión y determinismo: misma suite, `concurrency=1` vs. secuencial de SPEC-006; mismos casos, distinta concurrencia, mismos veredictos |
+| FR-US1-004, SC-US1-003 | test unitario: valores inválidos de `concurrency` → excepción antes de cualquier envío |
 | FR-US1-005 | `lint-imports` + inspección de `src/domain/` (sin referencias al coordinador) |
 | FR-US1-006 | test de batch con fallo puntual simulado en medio de ejecución concurrente |
 | FR-US1-007 | test unitario: respuestas desordenadas → `TestResult` asignados por identidad de caso |
 | FR-US1-008 | test de integración headless con `--concurrency K` |
-| FR-US1-009 | test de parada manual con K en vuelo: el coordinador drena los despachados, no lanza pendientes, y el `SuiteResult` contiene los drenados + previos |
+| FR-US1-009, SC-US1-005 | test de parada manual (SIGINT/`KeyboardInterrupt` simulado) con K en vuelo: el coordinador drena los despachados, no lanza pendientes, y el `SuiteResult` contiene los drenados + previos |
 | FR-US1-010 | inspección del log de corrida (opcional) |
-| FR-US1-011 | test del runner: sin `--concurrency`, el `ConcurrencyLimit` resuelto es 1 y el `SuiteResult` coincide con la corrida secuencial de SPEC-006 |
-| SC-US1-001 | test unitario con stub que registra el máximo de llamadas concurrentes (máximo observado ≤ K) |
-| SC-US1-002 | test de determinismo: mismos casos, distinta concurrencia, mismos veredictos |
-| SC-US1-003 | test unitario de validación de `ConcurrencyLimit` |
-| SC-US1-004 | test de regresión contra SPEC-006 |
-| SC-US1-005 | test de drenaje con SIGINT/`KeyboardInterrupt` simulado |
+| FR-US1-011, SC-US1-004 | test del runner: sin `--concurrency`, el `ConcurrencyLimit` resuelto es 1 y el `SuiteResult` coincide con la corrida secuencial de SPEC-006 |
 | SC-US1-006 | `tools/check_naming.py` + `tools/pipeline_local.sh` en cierre de iter |
 
 ### Fuera de alcance
@@ -118,7 +115,7 @@ Como usuario quiero configurar la concurrencia **desde el dashboard** y que la c
 - **FR-US2-001**: MUST: El dashboard expone un control para fijar `concurrency` y lo pasa al coordinador de ejecución de US1, sin duplicar la lógica de límite.
 - **FR-US2-002**: MUST: La ejecución batch del dashboard concilia la concurrencia con el control "Frenar" de SPEC-006 US3: corre hasta K casos en vuelo y, al frenar, drena los en vuelo (FR-US1-009) sin despachar pendientes, preservando la interrumpibilidad.
 - **FR-US2-003**: MUST: Con `concurrency=1` el dashboard preserva el comportamiento de stepping interrumpible de SPEC-006 US3 (retrocompatibilidad).
-- **FR-US2-004**: MUST: Ningún identificador nombra el framework de UI ni el mecanismo de concurrencia (SPEC-000-naming).
+- **FR-US2-004**: MUST: invariante [[SPEC-000-naming]] — ningún identificador nombra el framework de UI ni el mecanismo de concurrencia.
 
 ### Key Entities
 
@@ -140,11 +137,9 @@ Como usuario quiero configurar la concurrencia **desde el dashboard** y que la c
 | Requisito | Cubierto por |
 |-----------|-------------|
 | FR-US2-001 | control de concurrencia en `src/dashboard/app.py` que pasa el valor al coordinador + test del cableado |
-| FR-US2-002 | ejecución batch del dashboard con drenaje al frenar + SC-US2-001 (verificación funcional) |
-| FR-US2-003 | test/verificación de `concurrency=1` ≡ stepping de SPEC-006 US3 |
+| FR-US2-002, SC-US2-001 | ejecución batch del dashboard con drenaje al frenar + verificación funcional en la app real (último SC en cerrarse) |
+| FR-US2-003, SC-US2-002 | test/verificación de `concurrency=1` ≡ stepping interrumpible de SPEC-006 US3 (retrocompatibilidad) |
 | FR-US2-004 | `tools/check_naming.py` sobre `src/` |
-| SC-US2-001 | verificación funcional en el dashboard (último SC en cerrarse) |
-| SC-US2-002 | verificación de retrocompatibilidad con SPEC-006 US3 |
 
 ### Fuera de alcance
 
@@ -155,5 +150,6 @@ Como usuario quiero configurar la concurrencia **desde el dashboard** y que la c
 
 ## Historial
 
-- **2026-05-26** — Spec creada. Motivación: el usuario necesita correr suites grandes con N envíos simultáneos configurables para reducir tiempo total de corrida. La spec se mantiene agnóstica al mecanismo de concurrencia (asyncio, threadpool, etc.) para respetar el Principio I; el mecanismo concreto se decide al implementar. SPEC-006 resuelve el batch secuencial; esta spec agrega únicamente el parámetro de paralelismo sobre ese modelo.
-- **2026-06-09** — Pase de `/analyze` + `/clarify`. (1) **Decisión de drenaje** (F2): ante parada manual con `concurrency=K`, los casos en vuelo se drenan e incluyen, sin lanzar pendientes (FR-US1-009). (2) **Migración a estándar multi-HU** (F3): se separa en US1 — concurrencia headless (P2, MVP sin conflicto con la UI) y US2 — concurrencia en el dashboard (P3, que encapsula la reconciliación con el stepping cooperativo de SPEC-006 US3); FR-008 anterior (headless + dashboard) se descompone en FR-US1-008 (CLI) y la US2 completa. Renumeración FR-001→FR-US1-001 … FR-009→FR-US1-010, FR-010(drenaje)→FR-US1-009; SC-001→SC-US1-001 … SC-006→SC-US1-006. (3) **Fix de capa** (F1): FR-US1-005 reapunta el coordinador a `src/application/` (no `adapters/`/`build/`), coherente con ADR-005, que movió `run_batch` a la capa de aplicación tras redactarse la spec original. (4) **SC binario** (F4): SC-US1-001 deja de afirmar un speedup de tiempo ("significativamente menos", no medible de forma estable) y pasa a verificar el invariante binario "máximo de K envíos en vuelo". (5) Segundo pase de `/analyze` (G1): se explicita FR-US1-011 (default `concurrency=1` ausente el flag), requisito implícito del que dependía la retrocompatibilidad de FR-US1-003.
+- **2026-05-26** — Spec creada: correr suites grandes con N envíos simultáneos configurables. Agnóstica al mecanismo de concurrencia (Principio I); agrega sólo el parámetro de paralelismo sobre el batch secuencial de SPEC-006.
+- **2026-06-09** — Pase de `/analyze` + `/clarify`: decisión de **drenaje** ante parada manual (FR-US1-009); **migración a estándar multi-HU** (US1 headless P2 / US2 dashboard P3, renumeración sin cambio de comportamiento — mapeo en el commit); fix de capa (coordinador en `src/application/`, coherente con ADR-005); SC-US1-001 pasa de speedup no medible a invariante binario "máximo K en vuelo"; se explicita FR-US1-011 (default `concurrency=1`), base de la retrocompatibilidad de FR-US1-003.
+- **2026-07-05** — Reescritura editorial al formato compacto (convenciones de `docs/SPEC-FORMAT.md`): Resumen ejecutivo, coverage agrupado, historial podado. **Sin cambio normativo**.
