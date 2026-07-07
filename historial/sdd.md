@@ -1736,3 +1736,22 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 - Specs leídas: n/a (cambio de método; CONSTITUTION.md Principio V, docs/SDD-ENFORCEMENT.md).
 - Includes/excludes verificados: idempotencia probada (no-op con hooks presentes; instala con hook faltante); pipeline local VERDE 11/11.
 - SSOTs afectados: docs/SDD-ENFORCEMENT.md, tools/bootstrap_hooks.py (nuevo), tools/pipeline_local.sh, historial/sdd.md.
+
+---
+
+## 2026-07-07 — Cobertura del runner headless + PoC de tests de flujo del dashboard (AppTest vía driver agnóstico)
+
+**Scope:** dos mejoras de cobertura de tests, sin tocar `src/`:
+
+1. **`runner.py` de 66% → 99%** (`tests/unit/test_runner.py`, 8 tests nuevos): camino completo de `main` con config y factory stubeados (happy path con persistencia y `endpoint_url`, filas inválidas reportadas sin abortar, batch sin casos válidos, `MissingConfigError`, Ctrl+C con persistencia parcial y con cero casos), más las ramas de error de persistencia de `--estadistica` (corridas ilegibles; fallo al escribir el CSV sin perder el reporte a pantalla). Solo queda sin cubrir el guard `if __name__ == "__main__"`.
+2. **PoC de tests de flujo del dashboard** (`tests/integration/`): `ui_driver.py` — driver agnóstico que maneja la app headless por labels visibles (`fill`/`mark`/`choose`/`press` + lecturas de errores/éxitos/estado); su único acople al framework web es el import de `AppTest`, misma estrategia que `import streamlit as ui` en `app.py`. `test_dashboard_flows.py` — 4 flujos del modo simple (SPEC-001/SPEC-003): formulario incompleto → error de validación; formulario válido → caso listo; config incompleta → error sin llamar al agente; camino feliz con runtime stubeado → PASS + corrida persistida.
+3. **Fix de test desactualizado** (preexistente, detectado al correr `tests/integration` completo): `test_run_one_captura_traza_vacia_sin_fallar` esperaba `trace.steps == ()`, anterior a la síntesis de traza del pipeline síncrono (SPEC-013 FR-US3). Renombrado a `test_run_one_captura_la_traza_sintetizada_del_pipeline` y actualizado al contrato vigente (5 pasos en orden fijo, `overall_status == "completed"`).
+
+**Decisiones:** los tests del dashboard van en `tests/integration` (arrancan la app completa) y no entran al pipeline (que corre solo `tests/unit`) — pendiente decidir si se agregan como paso. Prioridad a la agnosticidad (pedido del usuario): los tests localizan widgets por label visible, nunca por keys internas; un cambio de framework solo reescribe `ui_driver.py`. Limitación documentada: `AppTest` no simula `file_uploader`, así que el flujo batch de la UI queda cubierto por helpers puros + prueba funcional manual. No se persigue cobertura de rendering puro (sería cobertura vacía).
+
+**Deuda arrastrada:** el test desactualizado evidenció que `tests/integration` no corre en ningún gate; decidir si entra al pipeline local.
+
+**[SDD-Check] — 2026-07-07 (cobertura runner + PoC dashboard)**
+- Specs leídas: SPEC-006-batch-suite, SPEC-008-suite-metrics, SPEC-001-single-case-input, SPEC-003-classification-evaluator, SPEC-013-client-adapter-selection, SPEC-000-naming.
+- Includes/excludes verificados: solo tests (sin cambio de comportamiento en `src/`); naming agnóstico en identificadores nuevos del driver; pipeline local VERDE 11/11 (298 tests unit) y `tests/integration` 9/9.
+- SSOTs afectados: historial/sdd.md (SPECS_REGISTRY sin cambios: ninguna spec cambió de estado).

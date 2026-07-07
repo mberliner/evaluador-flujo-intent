@@ -116,9 +116,18 @@ def test_run_one_fallo_tecnico_produce_indeterminado_sin_abortar() -> None:
     assert "Error de ejecución" in (result.notes or "")
 
 
-def test_run_one_captura_traza_vacia_sin_fallar() -> None:
+def test_run_one_captura_la_traza_sintetizada_del_pipeline() -> None:
+    # FR-US3-003/006: el adaptador síncrono sintetiza la traza del pipeline a
+    # partir del body cacheado; run_one la adjunta al resultado sin fallar.
     client = _client([_StubResponse(200, {"output_fastgate": {"clasificacion": "Verde"}})])
     result = run_one(_case("Verde"), client, ClassificationEvaluator(), capture_trace=True)
     assert result.passed is True
     assert result.trace is not None
-    assert result.trace.steps == ()
+    assert tuple(s.step_id for s in result.trace.steps) == (
+        "integridad",
+        "impacto",
+        "factibilidad",
+        "fastgate",
+        "redactor_mail",
+    )
+    assert result.trace.overall_status == "completed"

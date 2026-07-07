@@ -355,3 +355,162 @@ def test_main_requires_in_without_estadistica(tmp_path: Path, capsys: Any) -> No
     code = runner.main(["--out", str(tmp_path)])
     assert code == 2
     assert "Falta --in" in capsys.readouterr().err
+
+
+# --- main: camino completo con config y cliente stubeados (SPEC-006 US1) ---
+
+_HEADER = (
+    "id;nombre_iniciativa;intent_negocio;intent_operativo;intent_capacidad_equipos;"
+    "intent_tecnico_arquitectural;declaracion_intent;area_proponente;flujo_de_valor;"
+    "metricas_de_exito;impacto_personas;datos_ninguno;datos_publicos;datos_operativos;"
+    "datos_personales;datos_confidenciales;datos_otros;supuesto_riesgo;restricciones;"
+    "sponsor;mail_contacto;clasificacion_esperada;marcadores"
+)
+
+
+def _csv_row(case_id: str = "TC-1", *, nombre: str = "Iniciativa X") -> str:
+    return (
+        f"{case_id};{nombre};true;false;false;false;decl;area;flujo;metricas;"
+        "impacto;true;false;false;false;false;false;riesgo;restric;sponsor;"
+        "a@b.com;Verde;"
+    )
+
+
+class _StubConfig:
+    agent_id = "agent-x"
+    effective_endpoint_url = "https://agente.example/chat"
+
+
+def _patch_composition(monkeypatch: Any, client: _StubClient) -> None:
+    """Sustituye config y factory en el composition root: sin entorno ni red."""
+    monkeypatch.setattr(runner.PlatformConfig, "from_env", staticmethod(lambda: _StubConfig()))
+    monkeypatch.setattr(
+        runner.AgentClientFactory,
+        "create",
+        staticmethod(lambda config, timeout_seconds: client),
+    )
+
+
+def _write_batch(tmp_path: Path, *rows: str) -> Path:
+    batch = tmp_path / "casos.csv"
+    batch.write_text("\n".join([_HEADER, *rows]), encoding="utf-8")
+    return batch
+
+
+def test_main_happy_path_persists_and_reports(
+    tmp_path: Path, capsys: Any, monkeypatch: Any
+) -> None:
+    _patch_composition(monkeypatch, _StubClient())
+    batch = _write_batch(tmp_path, _csv_row("TC-1"), _csv_row("TC-2"))
+
+    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "Ejecutando 2 caso(s)" in captured.out
+    assert "[1/2] TC-1 -> pass" in captured.out
+    assert "2/2 pass" in captured.out
+    assert "Detalle guardado en:" in captured.out
+    reloaded = FileRunRepository(tmp_path).load_all()
+    assert len(reloaded) == 1
+    assert reloaded[0].total == 2
+    assert reloaded[0].endpoint_url == _StubConfig.effective_endpoint_url
+
+
+def test_main_reports_invalid_rows_and_still_runs_valid_ones(
+    tmp_path: Path, capsys: Any, monkeypatch: Any
+) -> None:
+    _patch_composition(monkeypatch, _StubClient())
+    batch = _write_batch(tmp_path, _csv_row("TC-1"), _csv_row("TC-2", nombre=""))
+
+    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "[fila 3] inválida" in captured.err
+    assert "Filas inválidas omitidas: 1" in captured.err
+    assert "Ejecutando 1 caso(s)" in captured.out
+
+
+def test_main_returns_1_when_no_valid_cases(tmp_path: Path, capsys: Any) -> None:
+    batch = _write_batch(tmp_path, _csv_row("TC-1", nombre=""))
+    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
+    assert code == 1
+    assert "No hay casos válidos" in capsys.readouterr().err
+
+
+def test_main_returns_1_on_invalid_config(tmp_path: Path, capsys: Any, monkeypatch: Any) -> None:
+    from src.adapters.platform_config import MissingConfigError
+
+    def _raise() -> None:
+        raise MissingConfigError("falta VAR_X")
+
+    monkeypatch.setattr(runner.PlatformConfig, "from_env", staticmethod(_raise))
+    batch = _write_batch(tmp_path, _csv_row("TC-1"))
+    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
+    assert code == 1
+    assert "Configuración inválida" in capsys.readouterr().err
+
+
+def test_main_interrupt_persists_partial_run(tmp_path: Path, capsys: Any, monkeypatch: Any) -> None:
+    # Ctrl+C en el 2º caso: la corrida parcial de 1 caso se persiste (FR-US3-002).
+    _patch_composition(monkeypatch, _StubClient(interrupt_on_send_call=2))
+    batch = _write_batch(tmp_path, _csv_row("TC-1"), _csv_row("TC-2"), _csv_row("TC-3"))
+
+    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "Frenado manual: 1 de 3 caso(s) completado(s)" in captured.out
+    reloaded = FileRunRepository(tmp_path).load_all()
+    assert len(reloaded) == 1
+    assert reloaded[0].total == 1
+
+
+def test_main_interrupt_on_first_case_persists_nothing(
+    tmp_path: Path, capsys: Any, monkeypatch: Any
+) -> None:
+    _patch_composition(monkeypatch, _StubClient(interrupt_on_send_call=1))
+    batch = _write_batch(tmp_path, _csv_row("TC-1"), _csv_row("TC-2"))
+
+    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "No se completó ningún caso" in captured.err
+    assert FileRunRepository(tmp_path).load_all() == []
+
+
+# --- main --estadistica: ramas de error de persistencia (SPEC-008) ---
+
+
+def test_main_estadistica_returns_1_when_runs_unreadable(
+    tmp_path: Path, capsys: Any, monkeypatch: Any
+) -> None:
+    from src.adapters.file_run_repository import RunPersistenceError
+
+    def _raise(self: FileRunRepository) -> None:
+        raise RunPersistenceError("disco simulado ilegible")
+
+    monkeypatch.setattr(FileRunRepository, "load_all", _raise)
+    code = runner.main(["--estadistica", "--out", str(tmp_path)])
+    assert code == 1
+    assert "No se pudieron leer las corridas" in capsys.readouterr().err
+
+
+def test_main_estadistica_reports_but_survives_csv_save_failure(
+    tmp_path: Path, capsys: Any, monkeypatch: Any
+) -> None:
+    # El reporte a pantalla no se pierde aunque el CSV no se pueda escribir.
+    from src.adapters.file_run_repository import RunPersistenceError
+
+    suite = runner.build_suite(
+        (_case("TC-1"),), _StubClient(), ClassificationEvaluator(), agent_id="agent-x"
+    )
+    FileRunRepository(tmp_path).save(suite)
+
+    def _raise(repo: FileRunRepository, title: str) -> str:
+        raise RunPersistenceError("escritura simulada fallida")
+
+    monkeypatch.setattr(runner, "generate_metrics_report", _raise)
+    code = runner.main(["--estadistica", "--out", str(tmp_path)])
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "## Matriz de confusión — total" in captured.out
+    assert "NO se pudo guardar el CSV" in captured.err
