@@ -59,3 +59,6 @@ jobs:
       # ── tests ──
       - name: pytest unit
         run: python -m pytest tests/unit -v
+
+      - name: pytest integration
+        run: python -m pytest tests/integration -v

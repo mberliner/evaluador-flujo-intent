@@ -1755,3 +1755,18 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 - Specs leídas: SPEC-006-batch-suite, SPEC-008-suite-metrics, SPEC-001-single-case-input, SPEC-003-classification-evaluator, SPEC-013-client-adapter-selection, SPEC-000-naming.
 - Includes/excludes verificados: solo tests (sin cambio de comportamiento en `src/`); naming agnóstico en identificadores nuevos del driver; pipeline local VERDE 11/11 (298 tests unit) y `tests/integration` 9/9.
 - SSOTs afectados: historial/sdd.md (SPECS_REGISTRY sin cambios: ninguna spec cambió de estado).
+
+---
+
+## 2026-07-07 — tests/integration entra a los gates (pipeline local + CI)
+
+**Scope:** salda la deuda del cierre anterior («`tests/integration` no corre en ningún gate»): paso `pytest integration` agregado a `tools/pipeline_local.sh` (paso 12) y al workflow de CI (`.github/workflows/ci.yml`, tras `pytest unit`). `AGENTS.md` actualiza la lista de pasos del pipeline. El CI ya tenía las dependencias necesarias (`requirements-dev.txt` incluye `requirements.txt`, que trae el framework UI para los tests headless).
+
+**Decisiones:** paso separado de `pytest unit` (mismo patrón de granularidad que el resto del pipeline: un fallo señala directo la capa). Los 9 tests de integración corren en ~11 s, costo aceptable para un gate de cierre.
+
+**Deuda arrastrada:** ninguna.
+
+**[SDD-Check] — 2026-07-07 (gate de integración)**
+- Specs leídas: n/a (cambio de método/tooling, no toca `src/`; AGENTS.md, historial del cierre previo).
+- Includes/excludes verificados: pipeline local VERDE 12/12 (298 unit + 9 integration); CI espeja el paso.
+- SSOTs afectados: tools/pipeline_local.sh, .github/workflows/ci.yml, AGENTS.md, historial/sdd.md.

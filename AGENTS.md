@@ -25,7 +25,7 @@ Cuando trabajes en este proyecto, sigue este protocolo:
 
 ## Al cerrar una iteración
 
-1. Corre `bash tools/pipeline_local.sh` y asegúrate que esté verde (constitución, trazabilidad SDD, lint, format, mypy, naming, capas, bandit, pytest unit). Si el pipeline no está disponible, corre `pre-commit run --all-files` como mínimo.
+1. Corre `bash tools/pipeline_local.sh` y asegúrate que esté verde (constitución, trazabilidad SDD, lint, format, mypy, naming, capas, bandit, pytest unit e integration). Si el pipeline no está disponible, corre `pre-commit run --all-files` como mínimo.
 2. Actualiza `specs/SPECS_REGISTRY.md` con el estado actual de las specs.
 3. Agrega una entrada en `historial/sdd.md` con fecha, scope, decisiones tomadas, deuda arrastrada.
 4. El commit de cierre incluye bloque `[SDD-Check]`:

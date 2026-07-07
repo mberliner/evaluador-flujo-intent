@@ -65,6 +65,7 @@ step "bandit (seguridad)"  python -m bandit -r src -q
 # ── tests ─────────────────────────────────────────────────────────────────────
 
 step "pytest unit"         python -m pytest tests/unit -v
+step "pytest integration"  python -m pytest tests/integration -v
 
 # ── resumen ───────────────────────────────────────────────────────────────────
 
