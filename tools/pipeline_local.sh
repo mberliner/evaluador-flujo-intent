@@ -40,6 +40,10 @@ step() {
     fi
 }
 
+# ── entorno ───────────────────────────────────────────────────────────────────
+
+step "hooks git instalados" python tools/bootstrap_hooks.py
+
 # ── gobernanza ──────────────────────────────────────────────────────────────
 
 step "constitucion"        python tools/check_constitution.py CONSTITUTION.md

@@ -1719,3 +1719,20 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 - Specs leídas: SPEC-003-classification-evaluator, SPEC-004-single-case-file, SPEC-008-suite-metrics, SPEC-005-run-persistence, SPEC-006-batch-suite, SPEC-010-batch-trace, SPEC-000-naming, CONSTITUTION.md, docs/ARCHITECTURE.md (ADR-005).
 - Includes/excludes verificados: sin cambio de comportamiento observable (mismos veredictos, misma persistencia, misma UX de error); naming agnóstico en identificadores nuevos (`needs_expected_classification`, `with_expected_classification`, `PhaseCallback`, `total_metrics_title`); `application/` sigue sin importar adapters/dashboard/runner; pipeline local VERDE 10/10 (290 tests).
 - SSOTs afectados: specs/SPEC-003, SPEC-004, SPEC-008, specs/SPECS_REGISTRY.md, docs/ARCHITECTURE.md (ADR-005), historial/sdd.md.
+
+---
+
+## 2026-07-07 — Bootstrap automático de los hooks git (cambio de método, sin spec)
+
+**Scope:** se detectó que en este clon nunca se había corrido `pre-commit install`, por lo que la capa git del enforcement (gate sdd en commit, linters, `sdd-reset` post-commit) estaba caída en silencio: `.sdd/current-spec` no se limpiaba tras el commit y ningún hook corría al commitear. git no permite auto-instalar hooks al clonar (por diseño), así que se enforza en el primer punto de contacto garantizado del tooling.
+
+**Cambios:** (1) instalación manual inmediata (`python -m pre_commit install --hook-type pre-commit --hook-type post-commit`) + `python tools/sdd_reset.py` para limpiar la declaración pendiente; (2) `tools/bootstrap_hooks.py` nuevo — idempotente, verifica primero si los hooks existen y solo instala los que faltan; no-op sin git; falla accionable sin el paquete `pre-commit`; usa `sys.executable -m pre_commit` (el binario no está en el PATH de este entorno); (3) cableado como **paso 0** de `tools/pipeline_local.sh` (`step "hooks git instalados"`, pipeline ahora 11 pasos): como el protocolo obliga a correr el pipeline en cada cierre, un clon nuevo queda reparado a más tardar en su primer pipeline, antes del primer commit; (4) documentado en `docs/SDD-ENFORCEMENT.md` §Mecanismo de "spec vigente".
+
+**Decisiones:** se analizaron alternativas (hook SessionStart de Claude, chequeo dentro de `sdd_gate.py`, `core.hooksPath` versionado) y el usuario eligió solo la capa pipeline (opción A) con verificación previa de existencia. Auto-instalar en vez de fallar en rojo: el remedio es determinista, local e idempotente.
+
+**Deuda arrastrada:** ninguna. Es cambio de framework/método (no toca `src/`): no requiere spec ni declaración en `.sdd/current-spec` (Principio V, ver SDD-ENFORCEMENT).
+
+**[SDD-Check] — 2026-07-07 (bootstrap hooks)**
+- Specs leídas: n/a (cambio de método; CONSTITUTION.md Principio V, docs/SDD-ENFORCEMENT.md).
+- Includes/excludes verificados: idempotencia probada (no-op con hooks presentes; instala con hook faltante); pipeline local VERDE 11/11.
+- SSOTs afectados: docs/SDD-ENFORCEMENT.md, tools/bootstrap_hooks.py (nuevo), tools/pipeline_local.sh, historial/sdd.md.
