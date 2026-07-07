@@ -91,6 +91,7 @@ proyecto:
 - El hook valida que el ID exista en `specs/` y esté registrado en `specs/SPECS_REGISTRY.md`. Si falta o es inválido, **bloquea** la edición con un mensaje accionable.
 - **Chequeo de mtime**: además de existir, al menos una spec declarada MUST haber sido editada *después* de escribir `current-spec` (comparación `mtime(specs/SPEC-NNN.md) > mtime(.sdd/current-spec)`). Esto impide declarar una spec y saltar directo a codear sin actualizarla primero. El flujo obligado es: declarar → editar la spec (agregar/actualizar FR) → editar `src/`.
 - Cambios de **framework/método** (que no tocan `src/`) no requieren declaración: el hook solo intercepta `src/`.
+- **Reset post-commit**: tras cada commit exitoso, `tools/sdd_reset.py` limpia las specs declaradas (deja solo los comentarios `#`), forzando declaración explícita al inicio de la próxima iteración. Está cableado como hook `sdd-reset` (`stages: [post-commit]`) en `.pre-commit-config.yaml`, pero **requiere instalación explícita por clon**: `pre-commit install --hook-type pre-commit --hook-type post-commit` (la instalación por defecto de `pre-commit install` no cubre la etapa post-commit; sin instalación, ningún hook de la capa git corre). Si el reset no corrió, se puede invocar a mano: `python tools/sdd_reset.py`.
 
 ---
 
