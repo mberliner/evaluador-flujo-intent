@@ -22,13 +22,13 @@ Este archivo lista todas las specs vigentes del proyecto. Cada spec describe una
 | SPEC-001-single-case-input | Entrada de un caso por pantalla (modo simple) | active | 1 rev.2026-05-25 | casero | [SPEC-001-single-case-input.md](SPEC-001-single-case-input.md) |
 | SPEC-002-agent-client | Cliente de agente remoto agnóstico (async) | active | 2 rev.2026-06-07 | casero | [SPEC-002-agent-client.md](SPEC-002-agent-client.md) |
 | SPEC-002b-message-builder | Constructor del payload hacia el agente | active | 2b | híbrido | [SPEC-002b-message-builder.md](SPEC-002b-message-builder.md) |
-| SPEC-003-classification-evaluator | Evaluador de clasificación por extracción + match exacto | active | 3 | casero | [SPEC-003-classification-evaluator.md](SPEC-003-classification-evaluator.md) |
+| SPEC-003-classification-evaluator | Evaluador de clasificación por extracción + match exacto | active | 3 rev.2026-07-07 | casero | [SPEC-003-classification-evaluator.md](SPEC-003-classification-evaluator.md) |
 | SPEC-003b-rejected-response | Detección y evaluación de respuesta RECHAZADO | active | 3b | híbrido | [SPEC-003b-rejected-response.md](SPEC-003b-rejected-response.md) |
-| SPEC-004-single-case-file | Carga de un caso unitario desde archivo (modo simple) | active | 4 | híbrido | [SPEC-004-single-case-file.md](SPEC-004-single-case-file.md) |
+| SPEC-004-single-case-file | Carga de un caso unitario desde archivo (modo simple) | active | 4 rev.2026-07-07 | híbrido | [SPEC-004-single-case-file.md](SPEC-004-single-case-file.md) |
 | SPEC-005-run-persistence | Persistencia y revisión del resultado de una ejecución | active | 5 rev.2026-06-07 | híbrido | [SPEC-005-run-persistence.md](SPEC-005-run-persistence.md) |
 | SPEC-006-batch-suite | Ejecución batch y estadística de corridas | active | 6 rev.2026-06-07 | híbrido | [SPEC-006-batch-suite.md](SPEC-006-batch-suite.md) |
 | SPEC-007-agent-trace | Visor de traza de ejecución del agente | active | 7 | híbrido | [SPEC-007-agent-trace.md](SPEC-007-agent-trace.md) |
-| SPEC-008-suite-metrics | Métricas de suite: matriz de confusión y accuracy por clase | active | 8 impl.2026-05-27 | híbrido | [SPEC-008-suite-metrics.md](SPEC-008-suite-metrics.md) |
+| SPEC-008-suite-metrics | Métricas de suite: matriz de confusión y accuracy por clase | active | 8 impl.2026-05-27 rev.2026-07-07 | híbrido | [SPEC-008-suite-metrics.md](SPEC-008-suite-metrics.md) |
 | SPEC-009-parallel-execution | Ejecución paralela de casos con concurrencia configurable | draft | 9 | híbrido | [SPEC-009-parallel-execution.md](SPEC-009-parallel-execution.md) |
 | SPEC-010-batch-trace | Traza de ejecución por caso en corridas batch | active | 10 rev.2026-06-07 | híbrido | [SPEC-010-batch-trace.md](SPEC-010-batch-trace.md) |
 | SPEC-011-agent-under-test | Selección del agente bajo prueba (perfiles) | draft | 11 | híbrido | [SPEC-011-agent-under-test.md](SPEC-011-agent-under-test.md) |

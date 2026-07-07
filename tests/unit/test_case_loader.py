@@ -7,16 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from src.build.case_loader import CaseLoadError, load
-from src.dashboard.app import _inject_clasificacion
+from src.build.case_loader import CaseLoadError, load, with_expected_classification
 from src.domain.test_case import TestCase
 
 _FIXTURES = Path(__file__).parent.parent / "fixtures"
 
-# El flujo del dashboard cuando el archivo no trae clasificacion_esperada (FR-007) se
-# ejercita con la funcion real, no con una copia: una regresion en la inyeccion rompe
-# estos tests. La deteccion (_file_needs_clasificacion) se cubre en
-# test_dashboard_file_load.py.
+# El flujo cuando el archivo no trae clasificacion_esperada (FR-007) se ejercita
+# con la funcion real del loader, no con una copia: una regresion en la inyeccion
+# rompe estos tests. La deteccion (needs_expected_classification) se cubre en
+# test_expected_classification.py.
 
 
 # ---------------------------------------------------------------------------
@@ -273,7 +272,7 @@ def test_datos_otros_true_sin_mensaje_levanta_value_error() -> None:
 def test_fixture_tc_v01_con_id_carga_correctamente() -> None:
     """casoTC-V-01.json: payload del agente con id en raiz, sin clasificacion_esperada."""
     raw = (_FIXTURES / "casoTC-V-01.json").read_bytes()
-    case = load(_inject_clasificacion(raw, "Verde"))
+    case = load(with_expected_classification(raw, "Verde"))
     assert isinstance(case, TestCase)
     assert case.id == "TC-V-01"
     assert case.nombre_iniciativa == "Asistente de Redacción de Comunicados"
@@ -287,7 +286,7 @@ def test_fixture_tc_v01_con_id_carga_correctamente() -> None:
 def test_fixture_tc_v01_f1_sin_id_autogenera() -> None:
     """casoTC-V-01-f1.json: payload sin id ni clasificacion_esperada — id se autogenera."""
     raw = (_FIXTURES / "casoTC-V-01-f1.json").read_bytes()
-    case = load(_inject_clasificacion(raw, "Verde"))
+    case = load(with_expected_classification(raw, "Verde"))
     assert isinstance(case, TestCase)
     assert case.id.startswith("TC-")
     assert case.nombre_iniciativa == "Asistente de Redacción de Comunicados"

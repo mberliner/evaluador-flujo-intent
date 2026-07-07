@@ -19,11 +19,15 @@ from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
 from src.adapters.token_provider import TokenError
-from src.application.generate_metrics_report import generate_metrics_report
-from src.application.run_suite import execution_failure, run_one
+from src.application.generate_metrics_report import generate_metrics_report, total_metrics_title
+from src.application.run_suite import execution_failure, is_execution_failure, run_one
 from src.build import message_builder
 from src.build.batch_loader import BatchLoadError, load_batch
-from src.build.case_loader import CaseLoadError
+from src.build.case_loader import (
+    CaseLoadError,
+    needs_expected_classification,
+    with_expected_classification,
+)
 from src.build.case_loader import load as load_case
 from src.dashboard.trace_panel import render_trace
 from src.domain.agent_trace import AgentTrace
@@ -195,33 +199,38 @@ def _build_runtime() -> tuple[PlatformConfig, AgentClient, ClassificationEvaluat
 
 
 def _send_and_evaluate(case: TestCase, *, fetch_trace: bool = False) -> None:
+    """Ejecuta el caso vía el use-case `application.run_one` (ADR-005; SPEC-003
+    §Integración con el dashboard). Este root solo traduce fases a widgets,
+    obtiene los mensajes crudos para display y persiste la corrida."""
     runtime = _build_runtime()
     if runtime is None:
         return
     config, client, evaluator = runtime
 
-    form = message_builder.build(case)
-    with ui.spinner("Enviando al agente..."):
-        trigger_response = client.send(form)
+    with ui.status("Enviando al agente...", expanded=False) as status:
 
-    thread_id = trigger_response.conversation_id
-    if not thread_id:
-        ui.error(f"El agente no devolvio thread_id. Respuesta: {trigger_response.content}")
+        def _on_phase(fase: str, detalle: str) -> None:
+            if fase == "esperando_flow":
+                status.update(
+                    label=f"Flow iniciado (thread `{detalle}`). Esperando la respuesta final..."
+                )
+
+        result = run_one(case, client, evaluator, capture_trace=fetch_trace, on_phase=_on_phase)
+        failed = is_execution_failure(result)
+        status.update(
+            label=result.actual_response if failed else "Caso evaluado.",
+            state="error" if failed else "complete",
+        )
+
+    if failed:
+        # Mismo comportamiento que antes del refactor: el fallo de ejecución del
+        # modo simple se muestra y no se persiste (el usuario reintenta).
+        ui.error(result.actual_response)
         return
 
-    ui.info(f"Flow iniciado. thread_id: `{thread_id}`. Esperando respuesta final...")
-    with ui.spinner("Esperando que el agente complete el flow..."):
-        completed = client.wait_for_completion(thread_id, timeout_seconds=300)
-
-    if not completed:
-        ui.error("El agente no respondio en el tiempo esperado.")
-        return
-
-    messages = client.get_thread_messages(thread_id)  # crudo, para el panel de display
-    agent_response = client.get_final_response(thread_id, trigger_response.content)
-    trace = client.get_trace(thread_id) if fetch_trace else None
-
-    result = evaluator.evaluate(case, agent_response)
+    thread_id = result.conversation_id or ""
+    # Lista cruda del thread, para el panel de display (queda en el root, ADR-005).
+    messages = client.get_thread_messages(thread_id) if thread_id else []
 
     run = SuiteResult.create(
         (result,), agent_id=config.agent_id, endpoint_url=config.effective_endpoint_url
@@ -236,8 +245,8 @@ def _send_and_evaluate(case: TestCase, *, fetch_trace: bool = False) -> None:
     ui.session_state["eval_result"] = {
         "result": result,
         "messages": messages,
-        "trace": trace,
-        "thread_id": thread_id,
+        "trace": result.trace,
+        "thread_id": thread_id or None,
         "endpoint_url": config.effective_endpoint_url,
         "saved_path": saved_path,
         "persist_error": persist_error,
@@ -728,12 +737,8 @@ def _render_run_stats_control() -> None:
 
         runs = repo.load_all()
         if runs:
-            matriz_title = (
-                f"Matriz de confusión — total ({len(runs)} corrida(s), "
-                f"{sum(r.total for r in runs)} caso(s))"
-            )
             try:
-                matriz_path = generate_metrics_report(repo, matriz_title)
+                matriz_path = generate_metrics_report(repo, total_metrics_title(runs))
                 ui.success(f"Matriz de confusión actualizada en: `{matriz_path}`")
             except RunPersistenceError as err:
                 ui.warning(f"No se pudo actualizar estadistica-matriz.csv: {err}")
@@ -767,28 +772,6 @@ def _reset_case() -> None:
     ui.session_state["form_gen"] = g + 1
     ui.session_state["nav_top"] = True
     ui.rerun()
-
-
-def _file_needs_clasificacion(raw: bytes) -> bool:
-    """True when the file is parseable JSON but lacks clasificacion_esperada at root."""
-    import json as _json  # local import: only needed for dashboard file-load path
-
-    try:
-        data = _json.loads(raw)
-    except Exception:
-        return False
-    if not isinstance(data, dict):
-        return False
-    return not bool(data.get("clasificacion_esperada", ""))
-
-
-def _inject_clasificacion(raw: bytes, clasificacion: str) -> bytes:
-    import json as _json  # local import: only needed for dashboard file-load path
-
-    data = _json.loads(raw)
-    if isinstance(data, dict):
-        data["clasificacion_esperada"] = clasificacion
-    return _json.dumps(data).encode()
 
 
 def _load_and_store(raw: bytes) -> None:
@@ -850,7 +833,7 @@ def main() -> None:
         )
         if uploaded is not None and ui.session_state.get("case_validated") is None:
             raw = uploaded.read()
-            needs_clasif = _file_needs_clasificacion(raw)
+            needs_clasif = needs_expected_classification(raw)
             if needs_clasif:
                 ui.info(
                     "El archivo no incluye 'clasificacion_esperada' (campo de ground truth). "
@@ -863,7 +846,7 @@ def main() -> None:
                 )
                 confirmed = ui.button("Cargar caso", key=f"file_confirm_{g}")
                 if confirmed:
-                    raw = _inject_clasificacion(raw, clasif_sel)
+                    raw = with_expected_classification(raw, clasif_sel)
                     _load_and_store(raw)
             else:
                 _load_and_store(raw)

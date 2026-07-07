@@ -45,6 +45,31 @@ def load(content: str | bytes) -> TestCase:
     return _build(raw)
 
 
+def needs_expected_classification(content: str | bytes) -> bool:
+    """True si el contenido es un objeto parseable que carece de `clasificacion_esperada`
+    en la raíz (SPEC-004 FR-007: archivos en formato puro del agente, sin ground truth).
+
+    Contenido ilegible o con raíz no-objeto devuelve False: esos casos los
+    rechaza `load()` con su error de formato, no el flujo de solicitud."""
+    try:
+        data = json.loads(content)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return False
+    if not isinstance(data, dict):
+        return False
+    return not bool(data.get("clasificacion_esperada", ""))
+
+
+def with_expected_classification(content: str | bytes, clasificacion: str) -> bytes:
+    """Devuelve el contenido con `clasificacion_esperada` inyectada en la raíz
+    (SPEC-004 FR-007). Si la raíz no es un objeto, se devuelve sin tocar (lo
+    rechaza `load()`)."""
+    data = json.loads(content)
+    if isinstance(data, dict):
+        data["clasificacion_esperada"] = clasificacion
+    return json.dumps(data).encode()
+
+
 def _resolve_id(value: Any) -> str:
     resolved = str(value).strip() if value is not None else ""
     return resolved or f"TC-{uuid.uuid4().hex[:8].upper()}"

@@ -17,7 +17,7 @@ from pathlib import Path
 from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
-from src.application.generate_metrics_report import generate_metrics_report
+from src.application.generate_metrics_report import generate_metrics_report, total_metrics_title
 from src.application.run_suite import build_suite, execution_failure, run_batch, run_one
 from src.build.batch_loader import BatchLoadError, load_batch
 from src.domain.classification_evaluator import ClassificationEvaluator
@@ -101,7 +101,7 @@ def _report_total_metrics(out_dir: str) -> int:
         return 1
 
     metrics = aggregate_suite_metrics(runs)
-    title = f"Matriz de confusión — total ({len(runs)} corrida(s), {metrics.total} caso(s))"
+    title = total_metrics_title(runs)
     print(format_metrics_markdown(metrics, title))
     try:
         path = generate_metrics_report(repo, title)

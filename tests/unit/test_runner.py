@@ -153,6 +153,59 @@ def test_run_batch_invokes_progress_callback_once_per_case() -> None:
     assert seen == [(1, 3, "TC-1"), (2, 3, "TC-2"), (3, 3, "TC-3")]
 
 
+def test_run_one_emits_phases_in_order() -> None:
+    # PhaseCallback (ADR-005 / SPEC-003 §Integración): fases agnósticas que cada
+    # composition root traduce a su canal (widget de estado vs. stdout).
+    seen: list[tuple[str, str]] = []
+    result = runner.run_one(
+        _case("TC-1"),
+        _StubClient(),
+        ClassificationEvaluator(),
+        on_phase=lambda fase, detalle: seen.append((fase, detalle)),
+    )
+    assert result.verdict == "pass"
+    assert seen == [("enviando", "TC-1"), ("esperando_flow", "thread-1")]
+
+
+def test_run_one_without_thread_id_stops_phases_at_enviando() -> None:
+    seen: list[str] = []
+    runner.run_one(
+        _case("TC-1"),
+        _StubClient(no_thread=True),
+        ClassificationEvaluator(),
+        on_phase=lambda fase, _detalle: seen.append(fase),
+    )
+    assert seen == ["enviando"]
+
+
+def test_is_execution_failure_distinguishes_from_genuine_indeterminate() -> None:
+    from src.application.run_suite import execution_failure, is_execution_failure
+
+    failure = execution_failure(_case("TC-1"), "timeout simulado")
+    assert is_execution_failure(failure) is True
+
+    # Indeterminado genuino: el agente respondió pero sin clasificación extraíble.
+    genuine = runner.run_one(
+        _case("TC-1"), _StubClient(final_text="sin color aqui"), ClassificationEvaluator()
+    )
+    assert genuine.verdict == "indeterminado"
+    assert is_execution_failure(genuine) is False
+
+    passed = runner.run_one(_case("TC-1"), _StubClient(), ClassificationEvaluator())
+    assert is_execution_failure(passed) is False
+
+
+def test_total_metrics_title_has_single_canonical_wording() -> None:
+    # SPEC-008 FR-010: redacción única del título, compartida por runner y dashboard.
+    from src.application.generate_metrics_report import total_metrics_title
+    from src.domain.result import SuiteResult
+
+    run = SuiteResult.create((TestResult("c1", "Verde", "...", "Verde", True),), agent_id="agent-x")
+    assert (
+        total_metrics_title([run, run]) == "Matriz de confusión — total (2 corrida(s), 2 caso(s))"
+    )
+
+
 def test_send_without_thread_id_yields_indeterminate_without_aborting() -> None:
     cases = (_case("TC-1"), _case("TC-2"))
     results = runner.run_batch(cases, _StubClient(no_thread=True), ClassificationEvaluator())

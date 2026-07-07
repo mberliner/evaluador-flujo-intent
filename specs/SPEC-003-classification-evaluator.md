@@ -48,13 +48,11 @@ Al cerrar SPEC-003 el dashboard cubre el corte vertical completo:
 
 1. Usuario carga form → `Validar caso`.
 2. Si validó, aparece botón `Enviar al agente`.
-3. Click → construye `PlatformConfig.from_env()`, `TokenProvider`, `RemoteAgentClient`.
-4. `client.send(form)` donde `form = message_builder.build(case)` → captura `thread_id` de la respuesta inmediata (content = control message).
-5. `client.wait_for_completion(thread_id, timeout=300)` → polling en `/threads/{thread_id}/messages` hasta que aparece un mensaje `role=assistant` que no es el control message (~10-45 s).
-6. `client.get_thread_messages(thread_id)` → lista cruda de mensajes del thread.
-7. Localiza el primer mensaje `role=assistant` cuyo `content` empiece con `"riesgo:"` → construye `AgentResponse(content=classification_msg_content, conversation_id=thread_id)`.
-8. `ClassificationEvaluator.evaluate(case, agent_response)` → `TestResult`.
-9. Pantalla muestra: badge verde "Pass" / rojo "Fail" / amarillo "Indeterminado", respuesta cruda colapsable, clasificación extraída, ground truth.
+3. Click → el composition root construye config + cliente + evaluador (`PlatformConfig.from_env()`, `AgentClientFactory`, ver [[SPEC-013-client-adapter-selection]]) e invoca el use-case `application.run_one(case, client, evaluator)` ([ADR-005](../docs/ARCHITECTURE.md)). El dashboard **no** orquesta los pasos del protocolo (send → wait → get_final_response → evaluate): eso vive en `run_one`, la misma ruta que usa el modo batch.
+4. `run_one` reporta progreso por el callback agnóstico `on_phase: PhaseCallback` — fases `"enviando"` (detalle: `case.id`) y `"esperando_flow"` (detalle: `thread_id`) — que el dashboard traduce a su widget de estado y el runner puede traducir a stdout. `application/` no conoce el framework de UI.
+5. Un fallo de ejecución (sin `thread_id`, timeout del flow) produce el `TestResult` Indeterminado anotado de `execution_failure`; el dashboard lo distingue con `application.is_execution_failure(result)`, muestra el error y no lo persiste (mismo comportamiento que antes del refactor).
+6. Con resultado evaluado, el dashboard obtiene la lista cruda de mensajes para el panel de display (`client.get_thread_messages(result.conversation_id)` — display del canal UI, queda en el root por ADR-005) y persiste la corrida ([[SPEC-005-run-persistence]]).
+7. Pantalla muestra: badge verde "Pass" / rojo "Fail" / amarillo "Indeterminado", respuesta cruda colapsable, clasificación extraída, ground truth.
 
 El framework UI sigue encapsulado: dashboard importa `streamlit as ui`.
 
@@ -87,3 +85,4 @@ El framework UI sigue encapsulado: dashboard importa `streamlit as ui`.
 - **Iter 3** — Spec creada. Se observó (Iter 2, smoke real) que el agente puede devolver respuestas de control de flow que no contienen clasificación. La spec lo absorbe como caso "indeterminado" sin agregar polling todavía: decisión revisable si el patrón se confirma en uso real.
 - **rev.2026-05-25** — Agregado criterio pendiente: botón "Evaluar otro caso" post-envío para resetear el formulario sin recargar la página.
 - **2026-06-08** — Reconciliación spec↔código: el snippet del regex de `extract` y la regla 1 mostraban solo 4 términos; el código real (`src/domain/classification_evaluator.py`) incluye `rechazado` desde [[SPEC-003b-rejected-response]]. Se actualizó el cuerpo a los 5 términos atribuyendo el quinto a SPEC-003b (sin duplicar su ownership). Sin cambio de comportamiento.
+- **2026-07-07** — Refactor de capas (ADR-005): el flujo simple del dashboard (`_send_and_evaluate`) duplicaba paso a paso la orquestación de `application.run_one` (send → wait → get_final_response → evaluate → traza). Se unificó: el dashboard invoca `run_one` con el nuevo callback opcional `on_phase: PhaseCallback` (fases `"enviando"` / `"esperando_flow"`) para el feedback de progreso, y usa `is_execution_failure()` para conservar el comportamiento previo ante fallos de ejecución (error en pantalla, sin persistir). Sección «Integración con el dashboard» reescrita a la composición real. Cambios colaterales: la captura de traza del modo simple pasa por `_capture_trace` (un fallo de `get_trace` ya no interrumpe el flujo, consistente con SPEC-010 FR-US2-005) y la traza capturada queda adjunta al `TestResult` persistido, como en batch. Veredicto y evaluación sin cambios.

@@ -1700,3 +1700,22 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 - Specs leídas: SPEC-013-client-adapter-selection.
 - Includes/excludes verificados: SC-001..004 confirmados (los tres primeros por suite automatizada, SC-004 por OK explícito del usuario); sin cambios de comportamiento.
 - SSOTs afectados: specs/SPEC-013-client-adapter-selection.md (active), specs/SPECS_REGISTRY.md, historial/sdd.md.
+
+---
+
+## 2026-07-07 — Refactor de capas (ADR-005): sin orquestación duplicada ni conocimiento de formato en los composition roots
+
+**Scope:** auditoría de capas sobre `dashboard/` y `runner.py` (pedido del usuario) detectó dos violaciones semánticas de ADR-005 (los imports estaban limpios; import-linter no las ve porque los composition roots pueden importar de todo) y una duplicación SSOT menor. Se corrigieron las tres:
+
+1. **SPEC-003** — `_send_and_evaluate` (dashboard, flujo simple) duplicaba paso a paso la orquestación de `application.run_one` (send → wait → get_final_response → evaluate → traza). Ahora invoca `run_one` con el nuevo callback opcional `on_phase: PhaseCallback` (fases `"enviando"` / `"esperando_flow"`, traducidas a `ui.status`); `is_execution_failure()` (nuevo, `application/`) preserva el comportamiento previo ante fallos de ejecución (error en pantalla, sin persistir). Colaterales: la captura de traza del modo simple pasa por `_capture_trace` (un fallo de `get_trace` ya no aborta el flujo) y la traza queda adjunta al `TestResult` persistido, como en batch.
+2. **SPEC-004 FR-007** — la detección/inyección de `clasificacion_esperada` (conocimiento del formato del archivo, con `import json`) vivía en `dashboard/app.py`; se movió a `build/case_loader.py` como `needs_expected_classification` / `with_expected_classification`. El dashboard conserva solo el selectbox. Tests renombrados: `test_dashboard_file_load.py` → `test_expected_classification.py`.
+3. **SPEC-008 FR-010** — el título «Matriz de confusión — total (N corrida(s), M caso(s))» se construía idéntico en `runner.py` y `dashboard/app.py`; centralizado en `total_metrics_title(runs)` (`application/generate_metrics_report.py`).
+
+**Decisiones:** se eligió el callback de fase (Opción B discutida con el usuario) sobre el spinner único, porque `wait_for_completion` puede tardar hasta 300 s y el feedback de fase es valioso; sigue el precedente de `ProgressCallback`. Los fallos de ejecución del modo simple se siguen mostrando sin persistir (sin cambio de comportamiento); la distinción se hace con `is_execution_failure`, no con string-matching en la UI.
+
+**Deuda arrastrada:** ninguna nueva. Pendiente el OK funcional del usuario en la app real (dashboard: envío simple con y sin traza, carga de archivo sin `clasificacion_esperada`, botón de estadística; runner: `--estadistica`).
+
+**[SDD-Check] — 2026-07-07**
+- Specs leídas: SPEC-003-classification-evaluator, SPEC-004-single-case-file, SPEC-008-suite-metrics, SPEC-005-run-persistence, SPEC-006-batch-suite, SPEC-010-batch-trace, SPEC-000-naming, CONSTITUTION.md, docs/ARCHITECTURE.md (ADR-005).
+- Includes/excludes verificados: sin cambio de comportamiento observable (mismos veredictos, misma persistencia, misma UX de error); naming agnóstico en identificadores nuevos (`needs_expected_classification`, `with_expected_classification`, `PhaseCallback`, `total_metrics_title`); `application/` sigue sin importar adapters/dashboard/runner; pipeline local VERDE 10/10 (290 tests).
+- SSOTs afectados: specs/SPEC-003, SPEC-004, SPEC-008, specs/SPECS_REGISTRY.md, docs/ARCHITECTURE.md (ADR-005), historial/sdd.md.

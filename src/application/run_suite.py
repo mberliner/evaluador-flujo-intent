@@ -23,6 +23,14 @@ from src.domain.test_case import TestCase
 # Callback de progreso: (índice 1-based, total, resultado del caso).
 ProgressCallback = Callable[[int, int, TestResult], None]
 
+# Callback de fase dentro de un caso: (fase, detalle). Fases emitidas por run_one:
+# "enviando" (detalle: id del caso) y "esperando_flow" (detalle: thread_id). Cada
+# composition root traduce la fase a su canal (widget de estado vs. stdout); ver
+# ADR-005 y SPEC-003 §Integración con el dashboard.
+PhaseCallback = Callable[[str, str], None]
+
+_EXECUTION_FAILURE_PREFIX = "Error de ejecución: "
+
 
 def run_one(
     case: TestCase,
@@ -31,15 +39,19 @@ def run_one(
     *,
     completion_timeout: int = 300,
     capture_trace: bool = False,
+    on_phase: PhaseCallback | None = None,
 ) -> TestResult:
     """Ejecuta y evalúa un caso. Un fallo de ejecución produce un resultado
     Indeterminado anotado, nunca una excepción que aborte la corrida (FR-006)."""
+    notify = on_phase or (lambda _fase, _detalle: None)
     form = message_builder.build(case)
+    notify("enviando", case.id)
     trigger = client.send(form)
     thread_id = trigger.conversation_id
     if not thread_id:
         return execution_failure(case, f"El agente no devolvió thread_id: {trigger.content}")
 
+    notify("esperando_flow", thread_id)
     if not client.wait_for_completion(thread_id, timeout_seconds=completion_timeout):
         return execution_failure(case, "El agente no completó el flow en el tiempo esperado.")
 
@@ -69,8 +81,16 @@ def execution_failure(case: TestCase, reason: str) -> TestResult:
         actual_response=reason,
         extracted_classification=None,
         passed=None,
-        notes=f"Error de ejecución: {reason}",
+        notes=f"{_EXECUTION_FAILURE_PREFIX}{reason}",
     )
+
+
+def is_execution_failure(result: TestResult) -> bool:
+    """True si el resultado proviene de `execution_failure` (el caso no llegó a
+    evaluarse), a diferencia del Indeterminado genuino (el agente respondió pero
+    sin clasificación extraíble). Los composition roots deciden con esto su
+    presentación/persistencia sin conocer la representación interna."""
+    return result.passed is None and result.notes.startswith(_EXECUTION_FAILURE_PREFIX)
 
 
 def run_batch(
