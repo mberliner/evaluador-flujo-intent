@@ -12,6 +12,7 @@ from typing import Any
 
 from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
+from src.dashboard.app import _TODAS_LAS_CORRIDAS
 from src.domain.ports import AgentResponse
 from tests.integration.ui_driver import AppDriver
 
@@ -81,14 +82,18 @@ def _fill_valid_case(app: AppDriver) -> None:
     # "Clasificacion esperada" queda en "Verde" (primera opción por defecto).
 
 
-def test_formulario_incompleto_muestra_error_y_no_valida_caso() -> None:
+def test_formulario_incompleto_muestra_error_y_no_valida_caso(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)  # aisla de corridas reales que pudieran existir en ./runs
     app = _driver()
     app.press("Validar caso")  # todo vacío: sin nombre, sin intent, sin datos
     assert any("Validacion fallida" in e for e in app.errors)
     assert app.session_value("case_validated") is None
 
 
-def test_formulario_valido_deja_el_caso_listo_para_enviar() -> None:
+def test_formulario_valido_deja_el_caso_listo_para_enviar(monkeypatch: Any, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)  # aisla de corridas reales que pudieran existir en ./runs
     app = _driver()
     _fill_valid_case(app)
     app.press("Validar caso")
@@ -98,8 +103,10 @@ def test_formulario_valido_deja_el_caso_listo_para_enviar() -> None:
 
 
 def test_envio_con_config_incompleta_muestra_error_sin_llamar_al_agente(
-    monkeypatch: Any,
+    monkeypatch: Any, tmp_path: Path
 ) -> None:
+    monkeypatch.chdir(tmp_path)  # aisla de corridas reales que pudieran existir en ./runs
+
     def _raise() -> None:
         raise MissingConfigError("falta VAR_X")
 
@@ -124,3 +131,25 @@ def test_camino_feliz_muestra_pass_y_persiste_la_corrida(monkeypatch: Any, tmp_p
     assert any(s.startswith("PASS") for s in app.successes)
     assert app.errors == []
     assert (tmp_path / "runs").is_dir()  # la corrida quedó persistida
+
+
+def test_revisar_corrida_guardada_muestra_matriz_y_metricas(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    """SPEC-008: 'Revisar una corrida guardada' lee de disco y renderiza la
+    corrida elegida (matriz + accuracy) y, al elegir 'Todas las corridas',
+    la matriz agregada — sin volver a llamar al agente."""
+    _patch_runtime(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+
+    seed = _driver()
+    _fill_valid_case(seed)
+    seed.press("Validar caso")
+    seed.press("Enviar al agente")
+    assert (tmp_path / "runs").is_dir()
+
+    app = _driver()  # reabre la app: debe listar la corrida recién persistida
+    assert app.session_value("saved_run_pick") is not None
+
+    app.choose("Corrida a revisar", _TODAS_LAS_CORRIDAS)
+    assert app.errors == []

@@ -40,8 +40,9 @@ class AppDriver:
         self._find_by_label(list(self._app.checkbox), label).check()
 
     def choose(self, label: str, value: str) -> None:
-        """Elige una opción en un desplegable."""
+        """Elige una opción en un desplegable (fuera de formulario: re-renderiza al toque)."""
         self._find_by_label(list(self._app.selectbox), label).select(value)
+        self._app.run()
 
     def press(self, label: str) -> None:
         """Aprieta un botón por su texto y procesa la interacción."""
