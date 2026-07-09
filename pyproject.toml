@@ -30,6 +30,12 @@ markers = [
     "smoke: integration smoke tests that hit a real remote agent",
 ]
 
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 80
+
 [tool.importlinter]
 root_package = "src"
 

@@ -59,6 +59,8 @@ Copy-Item .env.example .env      # rellenar con credenciales reales
 | Verificar capas | `lint-imports` |
 | Verificar naming agnóstico | `python tools/check_naming.py src/` |
 | Seguridad estática | `bandit -r src -q` |
+| Cobertura de tests (mínimo 80%) | `pytest tests/unit tests/integration --cov=src --cov-report=term-missing` |
+| Cobertura de `src/domain` (mínimo 96%) | `pytest tests/unit --cov=src/domain --cov-report=term-missing --cov-fail-under=96` |
 | Pipeline local completo (pre-SDD-Check) | `bash tools/pipeline_local.sh` |
 | Pipeline local — detener al primer fallo | `bash tools/pipeline_local.sh --fail-fast` |
 | Hooks de commit (ruff, mypy, naming, capas) | `pre-commit run --all-files` |
@@ -80,6 +82,8 @@ Aplicar `specs/SPEC-000-naming.md`. Los identificadores en `src/` no pueden cont
 - AAA (Arrange-Act-Assert).
 - Unit tests: rápidos, sin red, sin filesystem (usar `tmp_path` cuando hace falta).
 - Integration tests: con marker `@pytest.mark.smoke`, requieren `.env` con credenciales válidas.
+- Cobertura mínima: **80%** sobre `src/` (unit + integration combinados). Gate configurado en `pyproject.toml` (`[tool.coverage.report].fail_under`), forzado en el pipeline local y en CI.
+- Cobertura mínima reforzada: **96%** sobre `src/domain` (solo unit — la capa de lógica de negocio pura no depende de red/filesystem). Umbral más estricto que el global porque el Principio II/III de `CONSTITUTION.md` la marca como núcleo determinista; pasado por línea de comando (`--cov-fail-under=96`) ya que `coverage.py` no admite dos `fail_under` distintos en el mismo `pyproject.toml`.
 
 ### Commits
 
@@ -93,8 +97,8 @@ Reparto por trigger (SSOT):
 
 - **Hook de commit** (`pre-commit`, bloquea el commit): ruff (lint+format), mypy `--strict`, naming agnóstico y capas (`import-linter`), acotados a `^src/`. Los hooks locales son auto-contenidos (`language: python`): no requieren el venv en PATH.
 - **Push**: sin hooks. (`pytest` se retiró del `pre-push` el 2026-06-14; vivía solo en el pipeline local.)
-- **Pipeline local** (`bash tools/pipeline_local.sh`, cierre de iteración): todo lo del commit + gobernanza (constitución, trazabilidad SDD) + `bandit` + `pytest tests/unit`.
-- **CI — GitHub Actions** (`.github/workflows/ci.yml`): valida el código (ruff, mypy, naming, capas, bandit, pytest unit) ante `push` a `main` o PR que toque `src/`, `tests/`, `tools/` o manifiestos. Cambios solo de `docs/`/`specs/`/`historial/` no lo disparan. No incluye los gates de gobernanza documental.
+- **Pipeline local** (`bash tools/pipeline_local.sh`, cierre de iteración): todo lo del commit + gobernanza (constitución, trazabilidad SDD) + `bandit` + `pytest tests/unit` + `pytest tests/integration` + cobertura global (`--cov-fail-under=80`, unit+integration combinados) + cobertura de domain (`--cov-fail-under=96`, solo unit).
+- **CI — GitHub Actions** (`.github/workflows/ci.yml`): valida el código (ruff, mypy, naming, capas, bandit, pytest unit, pytest integration, cobertura global ≥80%, cobertura domain ≥96%) ante `push` a `main` o PR que toque `src/`, `tests/`, `tools/` o manifiestos. Cambios solo de `docs/`/`specs/`/`historial/` no lo disparan. No incluye los gates de gobernanza documental.
 
 Resumen operativo:
 

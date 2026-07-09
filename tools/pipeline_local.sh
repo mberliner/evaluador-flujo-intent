@@ -66,6 +66,8 @@ step "bandit (seguridad)"  python -m bandit -r src -q
 
 step "pytest unit"         python -m pytest tests/unit -v
 step "pytest integration"  python -m pytest tests/integration -v
+step "cobertura (>=80%)"   python -m pytest tests/unit tests/integration --cov=src --cov-report=term-missing -q
+step "cobertura domain (>=96%)" python -m pytest tests/unit --cov=src/domain --cov-report=term-missing --cov-fail-under=96 -q
 
 # ── resumen ───────────────────────────────────────────────────────────────────
 
