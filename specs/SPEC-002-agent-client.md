@@ -4,7 +4,7 @@
 **Iter:** 2 (revisada 2026-05-23 tras verificación e2e)
 **Depende de:** [[SPEC-000-naming]], [[SPEC-001-single-case-input]]
 
-**Resumen:** SSOT del puerto `AgentClient` (5 métodos) y del puerto `CredentialProvider`, y spec del adaptador asíncrono original: `PlatformConfig`, `TokenProvider` y `RemoteAgentClient` con su protocolo real (POST lanza un flow → polling del thread → respuesta final descartando el control message). Activa, verificada e2e. Los adaptadores alternativos y su selección viven en [[SPEC-013-client-adapter-selection]].
+**Resumen:** SSOT del puerto `AgentClient` (5 métodos) y del puerto `CredentialProvider`, y spec del adaptador asíncrono original: `PlatformConfig`, `TokenProvider` y `RemoteAgentClient` con su protocolo real (POST lanza un flow → polling del thread → respuesta final descartando el control message). Activa, verificada e2e.
 
 ## Propósito
 

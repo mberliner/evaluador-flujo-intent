@@ -378,16 +378,16 @@ def _csv_row(case_id: str = "TC-1", *, nombre: str = "Iniciativa X") -> str:
 
 class _StubConfig:
     agent_id = "agent-x"
-    effective_endpoint_url = "https://agente.example/chat"
 
 
 def _patch_composition(monkeypatch: Any, client: _StubClient) -> None:
-    """Sustituye config y factory en el composition root: sin entorno ni red."""
+    """Sustituye config, credenciales y cliente en el composition root: sin entorno ni red."""
     monkeypatch.setattr(runner.PlatformConfig, "from_env", staticmethod(lambda: _StubConfig()))
+    monkeypatch.setattr(runner, "TokenProvider", lambda config: None)
     monkeypatch.setattr(
-        runner.AgentClientFactory,
-        "create",
-        staticmethod(lambda config, timeout_seconds: client),
+        runner,
+        "RemoteAgentClient",
+        lambda config, credentials, timeout_seconds: client,
     )
 
 
@@ -413,7 +413,6 @@ def test_main_happy_path_persists_and_reports(
     reloaded = FileRunRepository(tmp_path).load_all()
     assert len(reloaded) == 1
     assert reloaded[0].total == 2
-    assert reloaded[0].endpoint_url == _StubConfig.effective_endpoint_url
 
 
 def test_main_reports_invalid_rows_and_still_runs_valid_ones(
@@ -435,19 +434,6 @@ def test_main_returns_1_when_no_valid_cases(tmp_path: Path, capsys: Any) -> None
     code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
     assert code == 1
     assert "No hay casos válidos" in capsys.readouterr().err
-
-
-def test_main_returns_1_on_invalid_config(tmp_path: Path, capsys: Any, monkeypatch: Any) -> None:
-    from src.adapters.platform_config import MissingConfigError
-
-    def _raise() -> None:
-        raise MissingConfigError("falta VAR_X")
-
-    monkeypatch.setattr(runner.PlatformConfig, "from_env", staticmethod(_raise))
-    batch = _write_batch(tmp_path, _csv_row("TC-1"))
-    code = runner.main(["--in", str(batch), "--out", str(tmp_path)])
-    assert code == 1
-    assert "Configuración inválida" in capsys.readouterr().err
 
 
 def test_main_interrupt_persists_partial_run(tmp_path: Path, capsys: Any, monkeypatch: Any) -> None:

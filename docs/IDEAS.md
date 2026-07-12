@@ -21,4 +21,3 @@ Cuando una idea se promueve a spec (aunque sea `draft`), su alcance, criterios y
 
 - **Repositorio estructurado de corridas (`DatabaseRunRepository`):** Evolucionar `FileRunRepository` a una implementación respaldada por una base de datos relacional para poder ejecutar consultas y reportes complejos sin parsear archivos de resultados. (Tecnología candidata a evaluar al especificar; el identificador debe permanecer agnóstico — SPEC-000-naming.)
 - **Desacoplamiento cliente-servidor de la interfaz:** Aislar la capa `application` y el runner tras una API (p. ej. REST), dejando al frontend como cliente reactivo (vía websockets o polling). Esto permitiría lanzar batch tests de forma segura y desatendida desde cualquier cliente o webhook.
-- **Selección de adaptador de cliente (plataformas alternativas)** — **(ya con spec)** → [SPEC-013-client-adapter-selection](../specs/SPEC-013-client-adapter-selection.md) (draft).

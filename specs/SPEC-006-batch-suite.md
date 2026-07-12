@@ -4,7 +4,7 @@
 **Iter:** 6
 **Formato:** Híbrido
 **Depende de:** [[SPEC-004-single-case-file]], [[SPEC-005-run-persistence]], [[SPEC-002-agent-client]], [[SPEC-003-classification-evaluator]]
-**Relacionada con:** [[SPEC-008-suite-metrics]], [[SPEC-010-batch-trace]], [[SPEC-013-client-adapter-selection]]
+**Relacionada con:** [[SPEC-008-suite-metrics]], [[SPEC-010-batch-trace]]
 
 **Resumen:** La suite ejecuta un archivo tabular de N casos en lote y persiste la corrida completa como un único run ([[SPEC-005-run-persistence]]). Tres cortes: **US1** ejecución batch con progreso por caso, runner headless y accuracy global (P2); **US2** estadística agregada por corrida a pedido, `estadistica-corridas.csv` (P3); **US3** parada manual conservando los casos completados (P3). Las tres cerradas con verificación funcional.
 
@@ -92,7 +92,7 @@ Como usuario quiero **generar, desde la misma pantalla y a pedido**, una estadí
 
 ### Acceptance Scenarios
 
-1. **Given** una o más corridas persistidas, **When** disparo la generación de estadística desde la pantalla, **Then** `runs/stats/estadistica-corridas.csv` contiene una fila por corrida con `run_id`, `timestamp`, `agent_id`, `endpoint_url`, `total`, `pass`, `fail`, `indeterminado`, `accuracy_bruta` y `accuracy_efectiva`.
+1. **Given** una o más corridas persistidas, **When** disparo la generación de estadística desde la pantalla, **Then** `runs/stats/estadistica-corridas.csv` contiene una fila por corrida con `run_id`, `timestamp`, `agent_id`, `total`, `pass`, `fail`, `indeterminado`, `accuracy_bruta` y `accuracy_efectiva`.
 2. **Given** una corrida donde **todos** los casos son Indeterminado, **When** se computa `accuracy_efectiva`, **Then** el valor es `null` (denominador cero) y `accuracy_bruta` es `0.0`, sin que el sistema falle por división por cero.
 3. **Given** `estadistica-corridas.csv` ya generado, **When** lo genero de nuevo, **Then** se regenera completo releyendo todos los detalles de `runs/detail/` y reescribiendo el archivo entero (operación idempotente, sin filas duplicadas).
 4. **Given** varias corridas persistidas, **When** genero la estadística, **Then** el CSV termina con una fila `TOTAL` que suma todos los casos de todas las corridas y reporta `accuracy_bruta`/`accuracy_efectiva` globales, y el dashboard muestra esos totales.
@@ -105,11 +105,9 @@ Como usuario quiero **generar, desde la misma pantalla y a pedido**, una estadí
 
 - **FR-US2-001**: MUST: El sistema computa, por corrida, `accuracy_bruta = pass / total` y `accuracy_efectiva = pass / (total - indeterminado)` (definiciones SSOT en `docs/PRODUCT.md` §Métricas; si difieren, manda PRODUCT.md). Ambos cómputos viven en `domain/` (sobre `SuiteResult`), no en el dashboard.
 - **FR-US2-002**: MUST: Si `total - indeterminado == 0`, `accuracy_efectiva` es `null`; el sistema no lanza error de división por cero.
-- **FR-US2-003**: MUST: El dashboard expone un control que, **a pedido del usuario**, genera `runs/stats/estadistica-corridas.csv` (separador `;`) con una fila por corrida y las columnas `run_id`, `timestamp`, `agent_id`, `endpoint_url`, `total`, `pass`, `fail`, `indeterminado`, `accuracy_bruta`, `accuracy_efectiva`.
-  > `endpoint_url` es la URL efectiva del endpoint/agente bajo test de esa corrida (campo `SuiteResult.endpoint_url`, SSOT [[SPEC-005-run-persistence]]; requisito originado en [[SPEC-013-client-adapter-selection]] User Story 2). Queda vacía para corridas persistidas antes de existir ese campo.
+- **FR-US2-003**: MUST: El dashboard expone un control que, **a pedido del usuario**, genera `runs/stats/estadistica-corridas.csv` (separador `;`) con una fila por corrida y las columnas `run_id`, `timestamp`, `agent_id`, `total`, `pass`, `fail`, `indeterminado`, `accuracy_bruta`, `accuracy_efectiva`.
 - **FR-US2-004**: MUST: La generación **regenera el archivo completo** releyendo todas las corridas persistidas en `runs/detail/`; es idempotente y no produce filas duplicadas si se la invoca repetidamente.
 - **FR-US2-005**: MUST: El CSV incluye, **al final**, una fila `TOTAL` con la estadística sobre **todos los casos de todas las corridas** (suma de `total`/`pass`/`fail`/`indeterminado` y `accuracy_bruta`/`accuracy_efectiva` globales). El cómputo vive en `domain/` (`aggregate_runs`); la fila se omite si no hay corridas. El dashboard muestra además estos totales al generar.
-  > La columna `endpoint_url` de la fila `TOTAL` queda vacía: no aplica a un agregado multi-corrida que puede mezclar endpoints distintos.
 - **FR-US2-006**: MUST: La generación de la estadística de corridas **no** invoca al agente; opera sobre las corridas ya persistidas / el `SuiteResult` en memoria.
 - **FR-US2-007**: MUST: invariante [[SPEC-000-naming]] — ningún identificador nombra el formato (`csv`, `json`) ni el framework de UI.
 
@@ -136,7 +134,7 @@ Como usuario quiero **generar, desde la misma pantalla y a pedido**, una estadí
 |---|---|
 | FR-US2-001 | métodos `accuracy_bruta` / `accuracy_efectiva` en `SuiteResult` + tests de cómputo |
 | FR-US2-002, SC-US2-002 | test de denominador cero (todos Indeterminado) |
-| FR-US2-003, SC-US2-001 | control en `src/dashboard/app.py` + test del escritor de `estadistica-corridas.csv` (incl. columna `endpoint_url`), verificado contra el `summary` del detalle |
+| FR-US2-003, SC-US2-001 | control en `src/dashboard/app.py` + test del escritor de `estadistica-corridas.csv`, verificado contra el `summary` del detalle |
 | FR-US2-004 | test de idempotencia: regenerar dos veces produce el mismo archivo, sin duplicados |
 | FR-US2-005, SC-US2-004 | `aggregate_runs` en `domain/` + test de la fila TOTAL contra la suma manual + métricas en el dashboard |
 | FR-US2-006 | garantía estructural: `FileRunRepository.regenerate_run_stats` opera sobre `runs/detail/` y no recibe el cliente del agente (tests en `test_file_run_repository.py`) |
@@ -224,5 +222,4 @@ Como usuario quiero **frenar una corrida batch en curso y quedarme con los resul
 - **2026-06-01** — Añadida **User Story 3 — Parada manual** (P3): headless corta ante Ctrl+C descartando el caso en vuelo; dashboard interrumpible por casos + botón "Frenar"; finalización compartida. Diferencia de granularidad headless/dashboard documentada como deliberada (Edge Cases).
 - **2026-06-07** — Por [ADR-005](../docs/ARCHITECTURE.md) la orquestación (`run_one`, `run_batch`, `build_suite`, `execution_failure`) se movió a `src/application/run_suite.py`; `src/runner` queda como entrypoint headless y composition root (FR-US1-006 sin cambio de comportamiento). Las menciones a `run_batch` en los FR se leen como "el use-case en `application/`". Implementado.
 - **2026-06-07** — Pase de consistencia spec↔código (`/analyze`): SC-US3-003 marcado tras verificación funcional; mapping de FR-US2-006 hecho veraz (garantía estructural en vez de test inexistente). Deuda: US1 sin SC funcional propio para FR-US1-008/009; FR-US2-006 reforzable con test-espía.
-- **2026-07-03** — Ampliación de esquema (spec viva) por [[SPEC-013-client-adapter-selection]] US2: columna `endpoint_url` en `estadistica-corridas.csv` (FR-US2-003), vacía en la fila `TOTAL` (FR-US2-005). SPEC-006 sigue siendo el único SSOT de las columnas del CSV. Implementado y verificado en `test_file_run_repository.py`.
 - **2026-07-05** — Reescritura editorial al formato compacto (convenciones de `docs/SPEC-FORMAT.md`): notas separadas de reglas en los FR, coverage agrupado, historial podado y ordenado cronológicamente. **Sin cambio normativo**: IDs de FR/SC y su semántica intactos.

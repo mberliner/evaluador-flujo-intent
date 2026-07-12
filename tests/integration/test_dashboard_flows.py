@@ -10,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
 from src.dashboard.app import _TODAS_LAS_CORRIDAS
 from src.domain.ports import AgentResponse
@@ -21,7 +20,6 @@ _APP_PATH = str(Path(__file__).parents[2] / "src" / "dashboard" / "app.py")
 
 class _StubConfig:
     agent_id = "agent-x"
-    effective_endpoint_url = "https://agente.example/chat"
 
 
 class _StubCredentials:
@@ -52,12 +50,11 @@ def _patch_runtime(monkeypatch: Any) -> None:
     """Sustituye config, credenciales y cliente en el composition root."""
     monkeypatch.setattr(PlatformConfig, "from_env", staticmethod(lambda: _StubConfig()))
     monkeypatch.setattr(
-        AgentClientFactory, "resolve_credentials", staticmethod(lambda config: _StubCredentials())
+        "src.adapters.token_provider.TokenProvider", lambda config: _StubCredentials()
     )
     monkeypatch.setattr(
-        AgentClientFactory,
-        "create",
-        staticmethod(lambda config, credentials=None, timeout_seconds=0: _StubClient()),
+        "src.adapters.remote_agent_client.RemoteAgentClient",
+        lambda config, credentials, timeout_seconds=0: _StubClient(),
     )
 
 

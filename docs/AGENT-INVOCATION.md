@@ -3,15 +3,6 @@
 SSOT del mecanismo de invocación del agente "FI Orquestador" en Watson Orchestrate.
 Cubre: cómo conectarse, el flujo de mensajes del cliente, y cómo leer la traza interna de sub-agentes.
 
-> **Alcance:** este documento cubre solo el adaptador **`remote_async`**
-> (`RemoteAgentClient`, Watson Orchestrate, transporte asíncrono con polling).
-> Para el adaptador síncrono **`sync_http`** (`SyncHttpAgentClient`, REST en una
-> sola llamada, sin `thread_id` nativo) el SSOT es
-> [[SPEC-013-client-adapter-selection]]: allí se define cómo simula el contrato
-> conversacional del puerto `AgentClient` (conversation_id sintético + cache) y
-> cómo sintetiza la traza. La selección de adaptador vía `AGENT_CLIENT_TYPE`
-> está en `docs/ARCHITECTURE.md` (ADR-001).
-
 ---
 
 ## 1. Endpoints involucrados

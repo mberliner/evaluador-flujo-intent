@@ -28,7 +28,7 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 - **SPEC-006** (3.980 → 3.498 palabras): resumen ejecutivo, reglas separadas de justificaciones (notas `>`), invariantes de naming a una línea, coverage agrupado (FR+SC que comparten artefacto), historial podado y reordenado cronológicamente; el mapeo de renumeración FR-viejo→FR-USn queda referido al commit de la migración 2026-05-27.
 - **SPEC-012** (4.191 → 3.984): extraída la sección **«Contrato del caso de traducción»** como referencia única del modelo de caso (antes repetido entre FR-US1-001, FR-US2-002, FR-US3-002 y Key Entities); FRs adelgazados con notas.
 - **SPEC-002** (1.563 → 1.433): resumen ejecutivo, narrativa de métodos condensada en notas, historial podado. Formato casero pre-híbrido conservado (migrarlo a híbrido sería cambio de fondo, no editorial).
-- Ganancia menor que el piloto (−12%/−5%/−8% vs. −46% de SPEC-013): estas specs tenían menos duplicación; el valor principal es estructural (resumen, contrato único, regla/nota).
+- Ganancia menor que el piloto (−12%/−5%/−8% vs. −46% del piloto): estas specs tenían menos duplicación; el valor principal es estructural (resumen, contrato único, regla/nota).
 
 **Deuda:** ninguna nueva; la deuda de formato verboso queda saldada.
 
@@ -36,13 +36,13 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ## 2026-07-05 — Convenciones de compacidad de specs + Principio VI (SSOT único por tema)
 
-**Scope:** cambio de método SDD, sin tocar `src/`: `CONSTITUTION.md` (0.5.2 → 0.6.0), `docs/SPEC-FORMAT.md`, `specs/SPEC-013-client-adapter-selection.md` (piloto).
+**Scope:** cambio de método SDD, sin tocar `src/`: `CONSTITUTION.md` (0.5.2 → 0.6.0), `docs/SPEC-FORMAT.md` y la spec usada como piloto.
 
 **Decisiones tomadas:**
 
-- **Piloto de compactación sobre SPEC-013:** reescritura editorial de 6.573 → 3.533 palabras (−46%) **sin cambio normativo** (IDs y semántica de FR/SC intactos). Palancas: resumen ejecutivo, sección única «Contrato verificado de la plataforma síncrona» (el detalle estaba repetido en FR-US1-010/011, FR-US3-003, Clarifications e Historial), regla separada de justificación en los FR (notas `>`), invariantes constitucionales reducidos a una línea, coverage mapping agrupado, historial podado a qué + por qué.
+- **Piloto de compactación:** reescritura editorial de una spec cerrada (−46% de palabras) **sin cambio normativo** (IDs y semántica de FR/SC intactos). Palancas: resumen ejecutivo, contrato externo descrito en sección única (el detalle estaba repetido en FRs, Clarifications e Historial), regla separada de justificación en los FR (notas `>`), invariantes constitucionales reducidos a una línea, coverage mapping agrupado, historial podado a qué + por qué.
 - **Convenciones formalizadas en `docs/SPEC-FORMAT.md`** (sección «Convenciones de compacidad», 6 reglas). Migración de las demás specs: **oportunística** — al tocar una spec por otro motivo se compacta en el mismo cambio; sin migración masiva dedicada.
-- **Enmienda constitucional (MINOR → 0.6.0): nuevo Principio VI — SSOT único por tema.** El invariante ya operaba disperso (AGENTS.md, SPEC-FORMAT, delegaciones tipo SPEC-013→SPEC-005) sin casa formal; la compactación es en el fondo enforcement de este principio. Enforcement: revisión editorial + `/analyze`; detalle en `00-INDEX.md` y `docs/SPEC-FORMAT.md`.
+- **Enmienda constitucional (MINOR → 0.6.0): nuevo Principio VI — SSOT único por tema.** El invariante ya operaba disperso (AGENTS.md, SPEC-FORMAT, delegaciones entre specs) sin casa formal; la compactación es en el fondo enforcement de este principio. Enforcement: revisión editorial + `/analyze`; detalle en `00-INDEX.md` y `docs/SPEC-FORMAT.md`.
 - **Límite del checker documentado:** `check_traceability.py` exige IDs literales completos en el coverage mapping; los rangos (`FR-US1-001..007`) no cuentan como cobertura. Se documenta en la convención 5 en lugar de extender el tool.
 
 **Deuda:** las specs pesadas restantes (SPEC-006, SPEC-012, SPEC-002) siguen en formato verboso hasta que un cambio las toque.
@@ -74,58 +74,6 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 ---
 
-## 2026-07-03 — SPEC-013 User Story 3: traza sintetizada del pipeline síncrono
-
-**Scope: toca sólo `src/adapters/sync_agent_client.py` + tests + spec.** La respuesta `200` de la plataforma síncrona ya trae las etapas del pipeline (`output_integridad → output_impacto → output_factibilidad → output_fastgate → output_redactor_mail`), pero el adaptador las descartaba al colapsar sólo el color (FR-US1-011), dejando el visor "Traza de ejecución" (SPEC-007) vacío para `sync_http`. Se sintetiza un `AgentTrace` desde esa respuesta ya obtenida, sin llamadas de red extra, reusando el modelo y el visor de SPEC-007 sin modificarlos.
-
-**Decisiones tomadas:**
-
-- **Síntesis agnóstica a la forma interna** (FR-US3-004): el estado del paso se decide sólo por presencia/contenido no vacío del bloque (`_has_content`), nunca leyendo un campo interno como `resultado`. Bloque con contenido → `completed`; ausente/`null`/vacío → `skipped`; **nunca `failed`** (un `false` de negocio no es fallo técnico, Principio III). Coherente con Clarifications US3 2026-07-03: sólo `output_fastgate` y el discriminador `null` están verificados empíricamente; la forma interna de los demás bloques no se sondeó, por eso no se asume.
-- **Cache extendido, sin red extra** (FR-US3-001): `send` retiene el body crudo (`self._bodies`) junto al veredicto ya cacheado; `get_trace` opera sobre lo cacheado (a diferencia de `RemoteAgentClient.get_trace`, que sí consulta `/flows`).
-- **Orden fijo del pipeline** (FR-US3-003): constante `_PIPELINE_STAGES` con `step_id` agnóstico y estable, clave `output_*` (confinada al adapter, ADR-001) y etiqueta legible; independiente del orden de claves del body. Consecuencias deliberadas verificadas en test: el gate que corto-circuitó queda `completed` (llegó con contenido) y `output_redactor_mail` (presente en ambas ramas) queda `completed` tras etapas `skipped`.
-- **Reuso sin modificar SPEC-007**: `AgentTrace`/`TraceStep` se consumen tal cual; `trace_panel.py` renderiza sin cambios (FR-US3-008). `overall_status="completed"` para un `200`, `flow_id=None`; campos sin dato nativo (`duration_ms`, `child_flow_id`, `started_at`, `completed_at`) en `None`. `get_thread_messages` sigue `[]`.
-- **Tolerancia a fallo** (FR-US3-007): fallo técnico (`conversation_id=None`) o `thread_id` sin cache → `AgentTrace(steps=())` sin excepción.
-
-**Verificación:** Pipeline local **VERDE 10/10** (286 tests). 8 tests nuevos en `test_sync_agent_client.py` (pipeline completo `completed` en orden fijo; orden independiente de claves; corto-circuito `skipped` + gate `completed`; nunca `failed`; resúmenes/truncado a 800; sin cache y fallo técnico → vacía). SC-US3-001..003 confirmados automáticamente.
-
-**Deuda arrastrada:**
-
-- **SC-US3-004 pendiente**: prueba funcional manual del usuario (enviar caso con `sync_http` y confirmar que "Traza de ejecución" muestra las etapas, incluido un caso de rechazo con etapas omitidas). SPEC-013 permanece en `draft` hasta ese OK, consistente con [[spec-cierre-requiere-prueba-funcional-manual]].
-- **Shape real de los bloques de gate diferido**: la forma interna de `output_integridad/impacto/factibilidad/redactor_mail` sigue sin sondearse; el primer envío funcional (SC-US3-004) puede refinar la spec si aparece un marcador de "ejecutado" que valga la pena distinguir (mismo patrón con que se reconcilió el prefijo `output_` en US1).
-
-**[SDD-Check] — 2026-07-03 (SPEC-013 US3)**
-- Specs leídas: SPEC-013, SPEC-007-agent-trace, SPEC-010-batch-trace, SPEC-000-naming; CONSTITUTION.md, docs/ARCHITECTURE.md.
-- Includes/excludes verificados: sin llamadas de red extra (traza desde lo cacheado en `send`); `get_thread_messages` sigue `[]`; sin variables de entorno ni dependencias nuevas; visor SPEC-007 sin cambios; síntesis agnóstica a la forma interna de los bloques.
-- SSOTs afectados: `specs/SPEC-013-client-adapter-selection.md` (US3), `specs/SPECS_REGISTRY.md` (Iter), `src/adapters/sync_agent_client.py`, `tests/unit/test_sync_agent_client.py`, `historial/sdd.md`.
-
----
-
-## 2026-07-03 — SPEC-013 User Story 2: trazabilidad del endpoint bajo test
-
-**Scope: toca `src/` (adapters, domain, application, dashboard) + specs SSOT relacionadas + tests.** Se agregó una segunda User Story a SPEC-013 para hacer visible y auditable a qué URL/endpoint concreto se envían las pruebas de cada corrida, cerrando la brecha detectada al preguntar "¿desde runs a qué endpoint hice las pruebas?" (hoy sólo se infería del `agent_id`, que es una etiqueta, no la URL real).
-
-**Decisiones tomadas:**
-
-- **SPEC-013 migrada a estándar multi-HU** (`docs/SPEC-FORMAT.md`): la spec original pasa a **User Story 1** (FR-001..013 → FR-US1-001..013, SC → SC-US1-*, renumeración sin cambio de comportamiento) para admitir la nueva **User Story 2** sin perder la primera.
-- **URL resuelta en `PlatformConfig`, no en los adaptadores** (FR-US2-001): property agnóstica `effective_endpoint_url` que reconstruye la URL según `client_type` (`remote_async` → `chat_url + agent_id + "/chat/completions"`; `sync_http` → `alt_client_url`). Ningún adaptador cambia su contrato ni su forma de armar el request: la property sólo **expone** hacia afuera un valor hoy encapsulado. El composition root lee la config, no le pregunta al cliente.
-- **No duplicar SSOT**: el campo persistido se define en sus specs dueñas — `SuiteResult.endpoint_url` en [[SPEC-005-run-persistence]] (FR-002 + Key Entities) y la columna `endpoint_url` de `estadistica-corridas.csv` en [[SPEC-006-batch-suite]] (FR-US2-003/005). SPEC-013 US2 sólo **referencia y consume**, no redeclara esas estructuras. Ambas specs actualizadas con entrada de historial propia.
-- **Retrocompatibilidad**: `from_dict` usa `data.get("endpoint_url", "")`; corridas persistidas antes del campo se leen con URL vacía sin romper el round-trip. La fila `TOTAL` del CSV deja la columna vacía (un agregado multi-corrida puede mezclar endpoints).
-- **Separación domain/UI de SPEC-008 intacta**: la URL se imprime como `caption` en el caller del render (envío single-case, vista de última corrida y vista batch, siempre antes de la matriz), sin que `SuiteMetrics` conozca la URL.
-
-**Verificación:** Pipeline local **VERDE 10/10** (279 tests). Tests nuevos: `effective_endpoint_url` por `client_type` (`test_platform_config.py`), round-trip + retrocompat de `endpoint_url` (`test_result.py`), columna en el CSV poblada/vacía (`test_file_run_repository.py`). SC-US2-001..003 confirmados automáticamente.
-
-**Deuda arrastrada:**
-
-- **SC-US2-004 pendiente**: prueba funcional manual del usuario (confirmar visualmente la URL en dashboard contra cada uno de los dos clientes). SPEC-013 permanece en `draft` hasta ese OK, consistente con [[spec-cierre-requiere-prueba-funcional-manual]] (el pipeline verde no cierra una spec).
-- **Comentarios de código con IDs viejos**: la renumeración FR-001..013 → FR-US1-001..013 dejó referencias `SPEC-013 FR-00x` desactualizadas en comentarios de `sync_agent_client.py`, `platform_config.py`, `agent_client_factory.py`, `runner.py` y tests; no se tocaron en esta iteración (no afectan comportamiento). Candidato a barrido de reconciliación documental.
-
-**[SDD-Check] — 2026-07-03 (SPEC-013 US2)**
-- Specs leídas: SPEC-013, SPEC-005, SPEC-006, SPEC-008, SPEC-000-naming; CONSTITUTION.md, docs/ARCHITECTURE.md.
-- Includes/excludes verificados: URL a nivel corrida (no por caso); dos clientes registrados (no un tercero); sin variables de entorno nuevas; adaptadores sin cambio de contrato.
-- SSOTs afectados: `specs/SPEC-013-client-adapter-selection.md` (US2), `specs/SPEC-005-run-persistence.md` (`SuiteResult.endpoint_url`), `specs/SPEC-006-batch-suite.md` (columna CSV), `specs/SPECS_REGISTRY.md` (estado → draft), `src/adapters/platform_config.py`, `src/domain/result.py`, `src/adapters/file_run_repository.py`, `src/application/run_suite.py`, `src/runner.py`, `src/dashboard/app.py`, `historial/sdd.md`.
-
----
-
 ## 2026-07-01 — Auditoría de consistencia docs/specs (reconciliación documental)
 
 **Scope: solo documentación y specs; no toca `src/` ni el producto.** Barrido de contradicciones, redundancias, violaciones de SSOT y simplificaciones sobre la constitución, los documentos de método y las 14 specs registradas. 7 hallazgos, todos resueltos.
@@ -134,7 +82,6 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 - **SPEC-002**: "Expone tres métodos" → enunciado sin conteo frágil (el puerto documenta 4 + `get_trace`).
 - **AGENTS.md**: la enumeración del pipeline omitía "trazabilidad SDD"; agregada (alinea con `docs/DEVELOPMENT.md` y `docs/SDD-ENFORCEMENT.md`).
-- **SPEC-013**: FR-008/FR-009 estaban fuera de orden en Functional Requirements y en Coverage mapping; reordenados.
 - **SPEC-000-naming**: un criterio citaba `_serializer` como excepción documentada inexistente en la tabla; removido.
 
 **Reconciliación spec↔código (verificada contra `src/domain/ports.py`):**
@@ -145,12 +92,12 @@ Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, sp
 
 **Sin cambio de comportamiento:** reconciliación documental; las specs `active` afectadas (SPEC-002, SPEC-000-naming) siguen coherentes con el código vigente. No requiere spec nueva (no se toca `src/`).
 
-**Deuda arrastrada:** la firma `send(form: dict)` (SPEC-002, vigente en código) sigue marcada para migrar a `send(input: AgentInput)` por SPEC-011 FR-014 / SPEC-013 FR-003 (drafts); reconciliación diferida a su implementación, ya registrada en esas specs.
+**Deuda arrastrada:** la firma `send(form: dict)` (SPEC-002, vigente en código) sigue marcada para migrar a `send(input: AgentInput)` por SPEC-011 FR-014 (draft); reconciliación diferida a su implementación, ya registrada en esas specs.
 
 **[SDD-Check] — 2026-07-01 (auditoría docs/specs)**
-- Specs leídas: SPEC-002, SPEC-002b, SPEC-005, SPEC-007, SPEC-008, SPEC-011, SPEC-012, SPEC-013, SPEC-000-naming; CONSTITUTION.md, AGENTS.md, 00-INDEX.md, docs/{ARCHITECTURE,PRODUCT,DEVELOPMENT,CONTRIBUTING,SDD-ENFORCEMENT,SPEC-FORMAT}.md.
+- Specs leídas: SPEC-002, SPEC-002b, SPEC-005, SPEC-007, SPEC-008, SPEC-011, SPEC-012, SPEC-000-naming; CONSTITUTION.md, AGENTS.md, 00-INDEX.md, docs/{ARCHITECTURE,PRODUCT,DEVELOPMENT,CONTRIBUTING,SDD-ENFORCEMENT,SPEC-FORMAT}.md.
 - Includes/excludes verificados: cambios acotados a docs/specs; verificada la superficie real del puerto contra `src/domain/ports.py` (no se editó `src/`).
-- SSOTs afectados: `specs/SPEC-002-agent-client.md` (puerto `AgentClient` + `CredentialProvider`), `AGENTS.md`, `specs/SPEC-013`, `specs/SPEC-000-naming.md`, `specs/SPECS_REGISTRY.md`, `historial/sdd.md`.
+- SSOTs afectados: `specs/SPEC-002-agent-client.md` (puerto `AgentClient` + `CredentialProvider`), `AGENTS.md`, `specs/SPEC-000-naming.md`, `specs/SPECS_REGISTRY.md`, `historial/sdd.md`.
 
 ---
 
@@ -1663,46 +1610,6 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 
 ---
 
-## 2026-07-03 — Iter 13: selección de adaptador de cliente (SPEC-013)
-
-**Scope:** implementación completa de SPEC-013-client-adapter-selection (permanece `draft`: toda spec requiere la prueba funcional manual del usuario antes de cerrarse, y está pendiente). La plataforma tecnológica del agente bajo prueba pasa a ser seleccionable por configuración (`AGENT_CLIENT_TYPE`): `remote_async` (cliente original, default, retrocompatible) o `sync_http` (nuevo adaptador síncrono REST con auth por header de llave).
-
-**Cambios:**
-- `adapters/platform_config.py`: lee `AGENT_CLIENT_TYPE` (FR-001) con requeridad de variables condicional al tipo activo (FR-006) y nuevas variables genéricas `ALT_CLIENT_URL`/`ALT_CLIENT_API_KEY` (FR-009). Tipo desconocido → `MissingConfigError` antes de cualquier red (SC-003).
-- `adapters/sync_agent_client.py` (nuevo): `SyncHttpAgentClient` cumple los 5 métodos del puerto `AgentClient` (FR-002). Postea el `form` plano en la raíz del body, sin envoltorio ni `id` (FR-010); colapsa el pipeline multi-etapa por pass-through genérico del color del bloque final, o `Rechazado` si el bloque viene `null` por corto-circuito (FR-011); simula el ciclo conversacional con `conversation_id` sintético + cache, transparente para `run_one` (FR-012); fallos técnicos (no-200, timeout, forma inesperada) → `conversation_id=None` → Indeterminado, nunca `Rechazado` (FR-013).
-- `adapters/agent_client_factory.py` (nuevo): `AgentClientFactory.create(config) -> AgentClient` centraliza el condicional de creación y la resolución del `CredentialProvider` (FR-005); expone `resolve_credentials` para la validación anticipada del dashboard.
-- `adapters/token_provider.py`: `StaticCredentialProvider` (llave fija, sin ciclo de token).
-- `dashboard/app.py` y `runner.py`: composition roots cableados vía factory; anotaciones relajadas al puerto `AgentClient` (FR-008); el runner reporta config inválida por stderr con exit 1 en vez de traceback.
-- `.env.example`: documenta `AGENT_CLIENT_TYPE` y las `ALT_CLIENT_*`.
-- `docs/ARCHITECTURE.md` (ADR-001 y sección adapters) reconciliado con la selección por configuración.
-
-**Decisiones tomadas:**
-- Discriminador del corto-circuito precisado en FR-011: bloque final **presente con `null`** (la clave existe en ambas ramas, verificado empíricamente); body sin la clave = forma inesperada → fallo técnico (FR-013). Evita mapear respuestas anómalas a `Rechazado` (Principio III).
-- `AGENT_ID` opcional para `sync_http` (metadata de corridas; fallback a la etiqueta del tipo de cliente).
-- FR-007 (SDKs de terceros) no se ejerció: el adaptador usa `requests`, ya presente; sin dependencias nuevas.
-
-**Deuda arrastrada / bloqueante de cierre:** SC-001..003 confirmados por la suite automatizada. Se agregó **SC-004** (prueba funcional manual del usuario, requisito de cierre de toda spec): validar contra la plataforma alternativa real (`AGENT_CLIENT_TYPE=sync_http` + `ALT_CLIENT_URL` + `ALT_CLIENT_API_KEY` en el entorno) y re-validar el camino original por defecto. Con el OK del usuario se tilda SC-004 y la spec pasa a `active`.
-
-**[SDD-Check] — 2026-07-03**
-- Specs leídas: SPEC-013-client-adapter-selection, SPEC-000-naming, SPEC-002-agent-client, SPEC-002b-message-builder, SPEC-003-classification-evaluator, CONSTITUTION.md, docs/ARCHITECTURE.md.
-- Includes/excludes verificados: fuera de alcance respetado (sin soporte multi-cliente por corrida; `MessageBuilder` intacto); naming agnóstico en identificadores nuevos; `requests` confinado a `adapters/`; pipeline local VERDE (constitución, trazabilidad, ruff, mypy --strict, naming, lint-imports, bandit, pytest).
-- SSOTs afectados: specs/SPEC-013-client-adapter-selection.md (draft, pend. validación funcional), specs/SPECS_REGISTRY.md, docs/ARCHITECTURE.md (ADR-001), .env.example, historial/sdd.md.
-
----
-
-## 2026-07-03 — Cierre de SPEC-013: OK funcional del usuario, spec pasa a `active`
-
-**Scope:** cierre de SPEC-013-client-adapter-selection. El usuario confirmó la prueba funcional manual (SC-004): un caso real con `AGENT_CLIENT_TYPE=sync_http` contra la plataforma alternativa devuelve veredicto correcto por el circuito completo, y el camino por defecto (sin la variable) sigue operando contra el proveedor original.
-
-**Cambios:** SC-004 tildado en la spec; estado `draft` → `active` en la spec y en `SPECS_REGISTRY.md`. Sin cambios de código (solo cierre documental).
-
-**[SDD-Check] — 2026-07-03 (cierre SPEC-013)**
-- Specs leídas: SPEC-013-client-adapter-selection.
-- Includes/excludes verificados: SC-001..004 confirmados (los tres primeros por suite automatizada, SC-004 por OK explícito del usuario); sin cambios de comportamiento.
-- SSOTs afectados: specs/SPEC-013-client-adapter-selection.md (active), specs/SPECS_REGISTRY.md, historial/sdd.md.
-
----
-
 ## 2026-07-07 — Refactor de capas (ADR-005): sin orquestación duplicada ni conocimiento de formato en los composition roots
 
 **Scope:** auditoría de capas sobre `dashboard/` y `runner.py` (pedido del usuario) detectó dos violaciones semánticas de ADR-005 (los imports estaban limpios; import-linter no las ve porque los composition roots pueden importar de todo) y una duplicación SSOT menor. Se corrigieron las tres:
@@ -1743,16 +1650,15 @@ Se estableció el patrón de unificación en dos capas: contenido en `docs/playb
 
 **Scope:** dos mejoras de cobertura de tests, sin tocar `src/`:
 
-1. **`runner.py` de 66% → 99%** (`tests/unit/test_runner.py`, 8 tests nuevos): camino completo de `main` con config y factory stubeados (happy path con persistencia y `endpoint_url`, filas inválidas reportadas sin abortar, batch sin casos válidos, `MissingConfigError`, Ctrl+C con persistencia parcial y con cero casos), más las ramas de error de persistencia de `--estadistica` (corridas ilegibles; fallo al escribir el CSV sin perder el reporte a pantalla). Solo queda sin cubrir el guard `if __name__ == "__main__"`.
+1. **`runner.py` de 66% → 99%** (`tests/unit/test_runner.py`, 8 tests nuevos): camino completo de `main` con config y cliente stubeados (happy path con persistencia, filas inválidas reportadas sin abortar, batch sin casos válidos, `MissingConfigError`, Ctrl+C con persistencia parcial y con cero casos), más las ramas de error de persistencia de `--estadistica` (corridas ilegibles; fallo al escribir el CSV sin perder el reporte a pantalla). Solo queda sin cubrir el guard `if __name__ == "__main__"`.
 2. **PoC de tests de flujo del dashboard** (`tests/integration/`): `ui_driver.py` — driver agnóstico que maneja la app headless por labels visibles (`fill`/`mark`/`choose`/`press` + lecturas de errores/éxitos/estado); su único acople al framework web es el import de `AppTest`, misma estrategia que `import streamlit as ui` en `app.py`. `test_dashboard_flows.py` — 4 flujos del modo simple (SPEC-001/SPEC-003): formulario incompleto → error de validación; formulario válido → caso listo; config incompleta → error sin llamar al agente; camino feliz con runtime stubeado → PASS + corrida persistida.
-3. **Fix de test desactualizado** (preexistente, detectado al correr `tests/integration` completo): `test_run_one_captura_traza_vacia_sin_fallar` esperaba `trace.steps == ()`, anterior a la síntesis de traza del pipeline síncrono (SPEC-013 FR-US3). Renombrado a `test_run_one_captura_la_traza_sintetizada_del_pipeline` y actualizado al contrato vigente (5 pasos en orden fijo, `overall_status == "completed"`).
 
 **Decisiones:** los tests del dashboard van en `tests/integration` (arrancan la app completa) y no entran al pipeline (que corre solo `tests/unit`) — pendiente decidir si se agregan como paso. Prioridad a la agnosticidad (pedido del usuario): los tests localizan widgets por label visible, nunca por keys internas; un cambio de framework solo reescribe `ui_driver.py`. Limitación documentada: `AppTest` no simula `file_uploader`, así que el flujo batch de la UI queda cubierto por helpers puros + prueba funcional manual. No se persigue cobertura de rendering puro (sería cobertura vacía).
 
-**Deuda arrastrada:** el test desactualizado evidenció que `tests/integration` no corre en ningún gate; decidir si entra al pipeline local.
+**Deuda arrastrada:** `tests/integration` no corre en ningún gate; decidir si entra al pipeline local.
 
 **[SDD-Check] — 2026-07-07 (cobertura runner + PoC dashboard)**
-- Specs leídas: SPEC-006-batch-suite, SPEC-008-suite-metrics, SPEC-001-single-case-input, SPEC-003-classification-evaluator, SPEC-013-client-adapter-selection, SPEC-000-naming.
+- Specs leídas: SPEC-006-batch-suite, SPEC-008-suite-metrics, SPEC-001-single-case-input, SPEC-003-classification-evaluator, SPEC-000-naming.
 - Includes/excludes verificados: solo tests (sin cambio de comportamiento en `src/`); naming agnóstico en identificadores nuevos del driver; pipeline local VERDE 11/11 (298 tests unit) y `tests/integration` 9/9.
 - SSOTs afectados: historial/sdd.md (SPECS_REGISTRY sin cambios: ninguna spec cambió de estado).
 

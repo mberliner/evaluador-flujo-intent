@@ -220,42 +220,6 @@ def test_regenerate_run_stats_appends_total_row(tmp_path: Path) -> None:
     assert total["accuracy_efectiva"] == "0.6667"  # 2/3 (excluye indeterminado)
 
 
-def test_regenerate_run_stats_includes_endpoint_url(tmp_path: Path) -> None:
-    """SPEC-013 FR-US2-003: la columna endpoint_url se puebla por corrida y queda
-    vacía en la fila TOTAL (agregado multi-corrida)."""
-    repo = FileRunRepository(tmp_path)
-    repo.save(
-        SuiteResult(
-            run_id="run-20260703T160000",
-            timestamp="2026-07-03T16:00:00+00:00",
-            agent_id="sync_http",
-            results=(_result("TC-1", passed=True),),
-            endpoint_url="https://alt.example/intents",
-        )
-    )
-    repo.regenerate_run_stats()
-
-    stats_path = tmp_path / "stats" / "estadistica-corridas.csv"
-    with stats_path.open(encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle, delimiter=";"))
-
-    assert rows[0]["endpoint_url"] == "https://alt.example/intents"
-    assert rows[-1]["run_id"] == "TOTAL"
-    assert rows[-1]["endpoint_url"] == ""
-
-
-def test_regenerate_run_stats_endpoint_url_empty_for_legacy_run(tmp_path: Path) -> None:
-    """SPEC-013 FR-US2-002/003: una corrida sin el campo (default '') no rompe el CSV."""
-    repo = FileRunRepository(tmp_path)
-    repo.save(_run("TC-1", passed=True))  # sin endpoint_url -> ""
-    repo.regenerate_run_stats()
-
-    stats_path = tmp_path / "stats" / "estadistica-corridas.csv"
-    with stats_path.open(encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle, delimiter=";"))
-    assert rows[0]["endpoint_url"] == ""
-
-
 def test_regenerate_run_stats_is_idempotent(tmp_path: Path) -> None:
     repo = FileRunRepository(tmp_path)
     repo.save(_run("TC-1", passed=True))

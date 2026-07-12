@@ -70,7 +70,6 @@ class SuiteResult:
     timestamp: str
     agent_id: str
     results: tuple[TestResult, ...]
-    endpoint_url: str = ""
 
     @classmethod
     def create(
@@ -79,7 +78,6 @@ class SuiteResult:
         agent_id: str,
         moment: datetime | None = None,
         token: str | None = None,
-        endpoint_url: str = "",
     ) -> SuiteResult:
         """Construye una corrida derivando run_id/timestamp del instante dado.
 
@@ -100,7 +98,6 @@ class SuiteResult:
             timestamp=when.isoformat(),
             agent_id=agent_id,
             results=tuple(results),
-            endpoint_url=endpoint_url,
         )
 
     @property
@@ -148,7 +145,6 @@ class SuiteResult:
             "run_id": self.run_id,
             "timestamp": self.timestamp,
             "agent_id": self.agent_id,
-            "endpoint_url": self.endpoint_url,
             "cases": [r.to_dict() for r in self.results],
             "summary": self.summary,
         }
@@ -174,9 +170,6 @@ class SuiteResult:
             timestamp=data["timestamp"],
             agent_id=data["agent_id"],
             results=cases,
-            # Retrocompat (SPEC-013 FR-US2-002): corridas previas al campo no
-            # traen la clave; se leen con endpoint_url vacio sin romper el round-trip.
-            endpoint_url=data.get("endpoint_url", ""),
         )
 
 

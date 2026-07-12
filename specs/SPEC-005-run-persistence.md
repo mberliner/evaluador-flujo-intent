@@ -4,7 +4,7 @@
 **Iter:** 5
 **Formato:** Híbrido
 **Depende de:** [[SPEC-003-classification-evaluator]], [[SPEC-002-agent-client]]
-**Relacionada con:** [[SPEC-006-batch-suite]], [[SPEC-008-suite-metrics]], [[SPEC-010-batch-trace]], [[SPEC-013-client-adapter-selection]]
+**Relacionada con:** [[SPEC-006-batch-suite]], [[SPEC-008-suite-metrics]], [[SPEC-010-batch-trace]]
 
 ## User Story (Priority: P1)
 
@@ -29,7 +29,7 @@ Como usuario quiero que el resultado de evaluar un caso **quede guardado**, no s
 ## Functional Requirements
 
 - **FR-001**: MUST: El sistema persiste el detalle de cada corrida como un archivo en `runs/detail/`. En modo unitario (1 caso) el nombre lleva el sufijo del caso: `run-YYYYMMDDTHHMMSS-<token>-<case_id>.json`; en batch (SPEC-006, N casos) el archivo es `run-YYYYMMDDTHHMMSS-<token>.json` sin sufijo de caso (ADR-004). El `<token>` es un sufijo único corto que garantiza que dos corridas terminadas en el mismo segundo no compartan `run_id` ni nombre de archivo.
-- **FR-002**: MUST: El detalle persistido contiene, a nivel corrida, `run_id`, `timestamp`, `agent_id` y `endpoint_url` (URL efectiva del endpoint/agente bajo test, requisito de [[SPEC-013-client-adapter-selection]] User Story 2; `""` por defecto para corridas previas a esa User Story, tolerado en `from_dict()` sin romper el round-trip); y por caso: `case_id`, esperado, clasificación detectada, veredicto, respuesta cruda y `conversation_id`. Incluye un bloque `summary` con `total`, `pass`, `fail`, `indeterminado`.
+- **FR-002**: MUST: El detalle persistido contiene, a nivel corrida, `run_id`, `timestamp` y `agent_id`; y por caso: `case_id`, esperado, clasificación detectada, veredicto, respuesta cruda y `conversation_id`. Incluye un bloque `summary` con `total`, `pass`, `fail`, `indeterminado`.
 - **FR-003**: MUST: El sistema apendea una fila por caso a `runs/stats/estadistica-casos.csv` (separador `;`) con columnas `run_id`, `timestamp`, `case_id`, `expected`, `extracted_classification`, `verdict`. Sin columnas de accuracy (a nivel caso el accuracy es redundante con el veredicto).
 - **FR-004**: MUST: El modelo de la corrida vive en `domain/` (`SuiteResult`), conteniendo uno o más `TestResult` y exponiendo los agregados del bloque `summary`. En modo unitario, una corrida envuelve **un** `TestResult`.
 - **FR-005**: MUST: El dominio define un puerto de persistencia de runs en `domain/ports.py`; la escritura/lectura concreta de archivos vive en `adapters/` (`FileRunRepository`). El dominio no importa el adapter.
@@ -40,7 +40,7 @@ Como usuario quiero que el resultado de evaluar un caso **quede guardado**, no s
 ## Key Entities
 
 - **TestResult** (existente, SPEC-003): unidad de resultado por caso. Esta spec NO cambia su shape; sí agrega `verdict` a `to_dict()` (hoy es solo `@property` y no se serializa).
-- **SuiteResult** (nuevo, `domain/`): agregado de una corrida — `run_id`, `timestamp`, `agent_id`, `endpoint_url` (default `""`, ver FR-002 y [[SPEC-013-client-adapter-selection]] User Story 2), lista de `TestResult` y `summary` (totales por veredicto). En unitario, la lista tiene longitud 1.
+- **SuiteResult** (nuevo, `domain/`): agregado de una corrida — `run_id`, `timestamp`, `agent_id`, lista de `TestResult` y `summary` (totales por veredicto). En unitario, la lista tiene longitud 1.
 - **Puerto de persistencia de runs** (nuevo, `domain/ports.py`): `Protocol` con `save(run) -> path/id` y `load(run_id) -> SuiteResult`.
 
 ## Success Criteria
@@ -63,7 +63,6 @@ Como usuario quiero que el resultado de evaluar un caso **quede guardado**, no s
 |---|---|
 | FR-001, FR-002 | `adapters/` (`FileRunRepository`) + test round-trip (save→load) del detalle JSON |
 | FR-003 | `adapters/` (append a `estadistica-casos.csv`) + test de append (encabezado único, filas acumuladas) |
-| FR-002 (campo `endpoint_url`) | `tests/unit/test_result.py` (round-trip `SuiteResult` con y sin `endpoint_url`, default retrocompatible) — requisito originado en [[SPEC-013-client-adapter-selection]] User Story 2 |
 | FR-004 | `domain/` `SuiteResult` + test de construcción y de `summary` |
 | FR-005 | puerto en `domain/ports.py` + `import-linter` (domain no importa adapters) |
 | FR-006 | `tools/check_naming.py` + revisión de identificadores del módulo de persistencia |
@@ -91,4 +90,3 @@ Como usuario quiero que el resultado de evaluar un caso **quede guardado**, no s
 - **2026-05-26** — Ajuste de comportamiento (spec viva, durante implementación de SPEC-006): (a) `estadistica-casos.csv` pasa a separador `;` (coherencia con el archivo batch y Excel en español); (b) el nombre del detalle lleva el sufijo `-<case_id>` sólo en modo unitario; en batch es `run-<ts>.json` sin sufijo, porque la corrida representa N casos. ADR-004 y `load()` (acepta ambos patrones) actualizados.
 - **2026-06-07** — Por [ADR-005](../docs/ARCHITECTURE.md) el use-case unitario `run_one` se movió a `src/application/run_suite.py` (antes en `src/runner`), junto con `run_batch`/`build_suite`; los composition roots (`runner`, `dashboard`) lo importan desde ahí. La ejecución la orquesta `application/`; la **persistencia** (`FileRunRepository.save`) se invoca en los composition roots (`dashboard/app.py`, `runner.py`), que es donde se captura `RunPersistenceError` (FR-008). La persistencia y el esquema de run no cambian. Implementado.
 - **2026-06-07** — Desambiguado FR-008 (hallazgo `/analyze` A2): "la capa que orquesta" se precisa como el **composition root** que invoca la persistencia (`dashboard`, `runner`), donde se captura `RunPersistenceError`. `application/` orquesta sólo la ejecución y permanece libre de I/O de disco. Sin cambios de código (el comportamiento ya era ése); se reconcilia la redacción con la implementación.
-- **2026-07-03** — Ampliación de esquema (spec viva) a pedido de [[SPEC-013-client-adapter-selection]] User Story 2: `SuiteResult` y el detalle persistido agregan el campo `endpoint_url` (FR-002, Key Entities) — la URL efectiva del endpoint/agente bajo test, resuelta por `PlatformConfig.effective_endpoint_url`. Default `""`, con retrocompatibilidad garantizada en `from_dict()` para runs previos sin la clave. SPEC-005 sigue siendo el único SSOT del esquema de `SuiteResult`; SPEC-013 sólo consume el campo. **Implementado** el 2026-07-03 (campo `endpoint_url` en `domain/result.py`, round-trip retrocompatible verificado en `test_result.py`).

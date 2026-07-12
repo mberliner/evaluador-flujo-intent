@@ -35,7 +35,6 @@ _RUN_STATS_COLUMNS: tuple[str, ...] = (
     "run_id",
     "timestamp",
     "agent_id",
-    "endpoint_url",
     "total",
     "pass",
     "fail",
@@ -157,7 +156,6 @@ class FileRunRepository:
                             run.run_id,
                             run.timestamp,
                             run.agent_id,
-                            run.endpoint_url,
                             s["total"],
                             s["pass"],
                             s["fail"],
@@ -172,9 +170,6 @@ class FileRunRepository:
                         [
                             "TOTAL",
                             "",
-                            "",
-                            # endpoint_url: vacio en el agregado, puede mezclar
-                            # endpoints distintos (SPEC-013 FR-US2-003/005).
                             "",
                             overall.total,
                             overall.passed,

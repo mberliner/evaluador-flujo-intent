@@ -17,22 +17,6 @@ class TokenError(RuntimeError):
     """Fallo obteniendo o refrescando el token."""
 
 
-class StaticCredentialProvider:
-    """Cumple el puerto CredentialProvider con una llave fija (SPEC-013).
-
-    Para plataformas cuya auth es una llave estatica por header, sin ciclo
-    de emision/refresh de token.
-    """
-
-    def __init__(self, key: str) -> None:
-        self._key = key
-
-    def get(self) -> str:
-        if not self._key:
-            raise TokenError("Credencial estatica vacia")
-        return self._key
-
-
 class TokenProvider:
     """Cumple el puerto CredentialProvider del dominio."""
 

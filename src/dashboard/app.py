@@ -15,10 +15,10 @@ from typing import Any, cast
 
 import streamlit as ui  # alias agnostico
 
-from src.adapters.agent_client_factory import AgentClientFactory
 from src.adapters.file_run_repository import FileRunRepository, RunPersistenceError
 from src.adapters.platform_config import MissingConfigError, PlatformConfig
-from src.adapters.token_provider import TokenError
+from src.adapters.remote_agent_client import RemoteAgentClient
+from src.adapters.token_provider import TokenError, TokenProvider
 from src.application.generate_metrics_report import generate_metrics_report, total_metrics_title
 from src.application.run_suite import execution_failure, is_execution_failure, run_one
 from src.build import message_builder
@@ -39,7 +39,6 @@ from src.domain.metrics import (
     aggregate_suite_metrics,
     compute_suite_metrics,
 )
-from src.domain.ports import AgentClient
 from src.domain.result import SuiteResult, TestResult, aggregate_runs
 from src.domain.test_case import PALETA_CLASIFICACION, TestCase
 
@@ -176,25 +175,22 @@ def _build_case(
     )
 
 
-def _build_runtime() -> tuple[PlatformConfig, AgentClient, ClassificationEvaluator] | None:
-    """Construye config + cliente + evaluador, o muestra el error y devuelve None.
-
-    El adaptador concreto lo decide AgentClientFactory segun AGENT_CLIENT_TYPE
-    (SPEC-013 FR-005); este root solo conoce el puerto AgentClient (FR-008)."""
+def _build_runtime() -> tuple[PlatformConfig, RemoteAgentClient, ClassificationEvaluator] | None:
+    """Construye config + cliente + evaluador, o muestra el error y devuelve None."""
     try:
         config = PlatformConfig.from_env()
     except MissingConfigError as err:
         ui.error(f"Configuracion incompleta: {err}")
         return None
 
-    credentials = AgentClientFactory.resolve_credentials(config)
+    credentials = TokenProvider(config)
     try:
         credentials.get()
     except TokenError as err:
         ui.error(f"Auth fallo: {err}")
         return None
 
-    client = AgentClientFactory.create(config, credentials=credentials, timeout_seconds=120)
+    client = RemoteAgentClient(config, credentials, timeout_seconds=120)
     return config, client, ClassificationEvaluator()
 
 
@@ -232,9 +228,7 @@ def _send_and_evaluate(case: TestCase, *, fetch_trace: bool = False) -> None:
     # Lista cruda del thread, para el panel de display (queda en el root, ADR-005).
     messages = client.get_thread_messages(thread_id) if thread_id else []
 
-    run = SuiteResult.create(
-        (result,), agent_id=config.agent_id, endpoint_url=config.effective_endpoint_url
-    )
+    run = SuiteResult.create((result,), agent_id=config.agent_id)
     saved_path: str | None = None
     persist_error: str | None = None
     try:
@@ -247,7 +241,6 @@ def _send_and_evaluate(case: TestCase, *, fetch_trace: bool = False) -> None:
         "messages": messages,
         "trace": result.trace,
         "thread_id": thread_id or None,
-        "endpoint_url": config.effective_endpoint_url,
         "saved_path": saved_path,
         "persist_error": persist_error,
     }
@@ -291,11 +284,6 @@ def _render_eval_result(data: dict[str, object]) -> None:
 
     if result.conversation_id:
         ui.caption(f"conversation_id: `{result.conversation_id}`")
-
-    # URL efectiva del endpoint/agente bajo test (SPEC-013 FR-US2-004a).
-    endpoint_url = cast("str | None", data.get("endpoint_url"))
-    if endpoint_url:
-        ui.caption(f"endpoint: `{endpoint_url}`")
 
     persist_error = cast("str | None", data.get("persist_error"))
     saved_path = cast("str | None", data.get("saved_path"))
@@ -361,10 +349,6 @@ def _render_latest_run() -> None:
 
     run = by_id[chosen]
     ui.caption(f"run_id: `{run.run_id}` — {run.timestamp} — agent_id: `{run.agent_id}`")
-    # URL efectiva del endpoint bajo test, junto a la metadata y la matriz de la
-    # corrida (SPEC-013 FR-US2-004b/c); vacía en corridas previas al campo.
-    if run.endpoint_url:
-        ui.caption(f"endpoint: `{run.endpoint_url}`")
     s = run.summary
     cols = ui.columns(4)
     cols[0].metric("Total", s["total"])
@@ -485,7 +469,6 @@ def _render_batch(g: int) -> None:
         ui.session_state["batch_done"] = []
         ui.session_state["batch_total"] = len(loaded.cases)
         ui.session_state["batch_agent_id"] = config.agent_id
-        ui.session_state["batch_endpoint_url"] = config.effective_endpoint_url
         ui.session_state["batch_traces"] = fetch_traces
         ui.session_state["batch_client"] = client
         ui.session_state["batch_evaluator"] = evaluator
@@ -528,7 +511,7 @@ def _run_batch_step(g: int) -> None:
 
     if pending:
         case = pending.pop(0)
-        client = cast("AgentClient", ui.session_state["batch_client"])
+        client = cast("RemoteAgentClient", ui.session_state["batch_client"])
         evaluator = cast(ClassificationEvaluator, ui.session_state["batch_evaluator"])
         try:
             outcome = run_one(
@@ -557,7 +540,6 @@ def _finalize_batch(*, stopped: bool) -> None:
     done = cast("list[TestResult]", ui.session_state.get("batch_done", []))
     total = cast(int, ui.session_state.get("batch_total", len(done)))
     agent_id = cast(str, ui.session_state.get("batch_agent_id", ""))
-    endpoint_url = cast(str, ui.session_state.get("batch_endpoint_url", ""))
 
     ui.session_state["batch_phase"] = "idle"
     for key in ("batch_pending", "batch_client", "batch_evaluator"):
@@ -565,7 +547,7 @@ def _finalize_batch(*, stopped: bool) -> None:
 
     if stopped and not done:
         ui.session_state["batch_result"] = {
-            "run": SuiteResult.create((), agent_id=agent_id, endpoint_url=endpoint_url),
+            "run": SuiteResult.create((), agent_id=agent_id),
             "saved_path": None,
             "stopped": True,
             "requested": total,
@@ -573,7 +555,7 @@ def _finalize_batch(*, stopped: bool) -> None:
         }
         return
 
-    suite = SuiteResult.create(tuple(done), agent_id=agent_id, endpoint_url=endpoint_url)
+    suite = SuiteResult.create(tuple(done), agent_id=agent_id)
     saved_path: str | None = None
     persist_error: str | None = None
     try:
@@ -607,11 +589,6 @@ def _render_batch_result(data: dict[str, object]) -> None:
     persist_error = cast("str | None", data.get("persist_error"))
     if persist_error:
         ui.error(f"La corrida se cerró pero NO se pudo persistir: {persist_error}")
-
-    # URL efectiva del endpoint bajo test, junto a las métricas/matriz de la
-    # corrida batch (SPEC-013 FR-US2-004b/c).
-    if run.endpoint_url:
-        ui.caption(f"endpoint: `{run.endpoint_url}`")
 
     s = run.summary
     cols = ui.columns(5)
