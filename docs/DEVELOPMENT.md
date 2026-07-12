@@ -49,11 +49,9 @@ Copy-Item .env.example .env      # rellenar con credenciales reales
 
 | Acción | Comando |
 |---|---|
-| Dashboard (modo simple — Iter 1+) | `streamlit run src/dashboard/app.py` |
+| Dashboard (modo simple — disponible desde Iter 1) | `streamlit run src/dashboard/app.py` |
 | Tests unitarios | `pytest tests/unit -v` |
 | Smoke test (golpea agente real) | `pytest tests/integration -v -k smoke` |
-| Suite headless (modo batch) | `python -m src.runner --in <archivo> --out runs/` |
-| Estadística de suite a archivo + pantalla (sin ejecutar) | `python -m src.runner --estadistica --out runs/` |
 | Lint + format | `ruff check src tests && ruff format src tests` |
 | Type check | `mypy --strict src` |
 | Verificar capas | `lint-imports` |

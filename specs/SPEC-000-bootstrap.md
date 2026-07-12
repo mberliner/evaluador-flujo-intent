@@ -25,7 +25,6 @@ Establecer la estructura mínima del proyecto, la configuración del entorno y l
 
 3. **Documentación SSOT** por dominio (patrón EnVivo):
    - `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT.md`, `docs/CONTRIBUTING.md`, `docs/PRODUCT.md`
-   - `docs/SPEC-FORMAT.md` — template y convenciones del formato híbrido de specs (GitHub Spec Kit). SSOT del método de redacción de specs desde SPEC-004 en adelante.
 
 4. **Configuración externa**:
    - `.env.example` con todas las vars requeridas (sin secretos)
@@ -35,14 +34,14 @@ Establecer la estructura mínima del proyecto, la configuración del entorno y l
 
 ## Criterios de aceptación
 
-- [x] Estructura de carpetas creada (incluye `schemas/` agregado en rev.2026-05-25)
+- [x] Estructura de carpetas creada (incluye `schemas/`)
 - [x] `pip install -r requirements.txt` instala sin errores en Python ≥3.11 (venv activo y funcional)
 - [ ] `pre-commit run --all-files` pasa en verde (pendiente: requiere `git init`)
-- [x] `pytest` exit code 0 (suite completa verde)
+- [x] `pytest` exit code 0 (suite vacía, colección sin errores)
 - [x] `mypy --strict src` exit code 0 (sin errores de tipos)
 - [x] `lint-imports` verifica la regla de capas (import-linter en `requirements-dev.txt`, contratos en `pyproject.toml`, corre como step en `tools/pipeline_local.sh`)
-- [x] Linter de naming pasa — `tools/check_naming.py src tests tools` verde (2026-05-25)
-- [x] `historial/sdd.md` registra el cierre de Iter 0 y todas las iters posteriores
+- [x] Linter de naming pasa — `tools/check_naming.py src tests tools` verde
+- [ ] `historial/sdd.md` registra el cierre de cada iteración
 
 ## Convenciones de commit (cierre de iteración)
 

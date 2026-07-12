@@ -29,8 +29,8 @@ indicá crear la spec primero (no la crees aquí).
    - Restricciones y trade-offs; alternativas rechazadas.
    - Terminología y consistencia; criterios de aceptación testeables.
 
-   (Las categorías en negrita son las que dejaron pasar el requisito de unicidad
-   multiusuario del caso `run_id`: prestales atención especial.)
+   (Las categorías en negrita son las que más fácilmente dejan pasar requisitos
+   implícitos: prestales atención especial.)
 
 2. **Cola priorizada** (máx. 5 preguntas): solo las que cambien materialmente
    arquitectura, modelo de datos, decomposición en tareas, diseño de tests o
@@ -43,7 +43,7 @@ indicá crear la spec primero (no la crees aquí).
 4. **Integración tras cada respuesta aceptada**:
    - Asegurá una sección `## Clarifications` con un subtítulo `### Session YYYY-MM-DD`.
    - Agregá `- Q: <pregunta> → A: <respuesta>`.
-   - Aplicá la aclaración a la sección correspondiente (Functional Requirements, Success Criteria como métrica, Edge Cases, etc.). Si convierte un requisito implícito en explícito, **agregá el `FR-NNN` correspondiente** (esto es lo que previene el antipatrón `run_id`).
+   - Aplicá la aclaración a la sección correspondiente (Functional Requirements, Success Criteria como métrica, Edge Cases, etc.). Si convierte un requisito implícito en explícito, **agregá el `FR-NNN` correspondiente** (esto es lo que previene el antipatrón del requisito implícito sin FR).
    - Guardá la spec tras cada integración (Edit).
 
 5. **Cierre**: número de preguntas, secciones tocadas, y si quedan categorías

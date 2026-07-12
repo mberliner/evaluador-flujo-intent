@@ -34,13 +34,7 @@ markers = [
 root_package = "src"
 
 [[tool.importlinter.contracts]]
-name = "domain no depende de adapters, application, dashboard ni runner"
+name = "domain no depende de adapters ni dashboard"
 type = "forbidden"
 source_modules = ["src.domain"]
-forbidden_modules = ["src.adapters", "src.application", "src.dashboard", "src.runner"]
-
-[[tool.importlinter.contracts]]
-name = "application no depende de adapters concretos, dashboard ni runner"
-type = "forbidden"
-source_modules = ["src.application"]
-forbidden_modules = ["src.adapters", "src.dashboard", "src.runner"]
+forbidden_modules = ["src.adapters", "src.dashboard"]

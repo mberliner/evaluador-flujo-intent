@@ -28,10 +28,9 @@ Spec objetivo: `$ARGUMENTS`. Si está vacío, leé la primera SPEC declarada en
    - `specs/SPECS_REGISTRY.md`: estado y formato de la spec.
    - `CONSTITUTION.md`: los 5 principios (para validar conflictos).
    - `tests/`: tests que cubren la capacidad (buscá por nombre/keywords y por las referencias del Coverage mapping).
-   - `docs/SPEC-FORMAT.md`: formato esperado.
 
 2. **Pasos de detección** (alta señal, máx. 50 hallazgos):
-   - **Cobertura semántica**: ¿cada `FR-NNN` mapea a un test que realmente lo ejercita (no solo aparece en la tabla)? ¿hay requisitos *implícitos* en el comportamiento que no tienen FR? (este es el gap que dejó pasar el caso `run_id`).
+   - **Cobertura semántica**: ¿cada `FR-NNN` mapea a un test que realmente lo ejercita (no solo aparece en la tabla)? ¿hay requisitos *implícitos* en el comportamiento que no tienen FR?
    - **Ambigüedad**: adjetivos vagos sin criterio medible (rápido, robusto, seguro); marcadores `[NEEDS CLARIFICATION]` sin resolver.
    - **Subespecificación**: FR con verbo pero sin objeto o resultado medible; User Story sin Acceptance Scenarios alineados.
    - **Conflicto constitucional**: cualquier FR o decisión que choque con un principio MUST (I naming, II capas, III determinismo, IV datos, V trazabilidad). Estos son CRITICAL.

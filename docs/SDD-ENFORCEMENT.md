@@ -35,7 +35,7 @@ El hook hace **obligatorio** correr el juicio; no lo reemplaza.
 El repo no usa git, así que no hay "rama por feature". El sustituto es un archivo
 de declaración en la raíz del proyecto:
 
-- **`.sdd/current-spec`** MUST contener el ID de la spec que gobierna el trabajo en curso (ej. `SPEC-006-batch-suite`), una por línea.
+- **`.sdd/current-spec`** MUST contener el ID de la spec que gobierna el trabajo en curso (formato `SPEC-NNN-slug`), una por línea.
 - Antes de editar `src/`, el autor (humano o asistente) MUST declarar ahí la `SPEC-NNN`.
 - El hook valida que el ID exista en `specs/` y esté registrado en `specs/SPECS_REGISTRY.md`. Si falta o es inválido, **bloquea** la edición con un mensaje accionable.
 - Cambios de **framework/método** (que no tocan `src/`) no requieren declaración: el hook solo intercepta `src/`.
@@ -46,7 +46,7 @@ de declaración en la raíz del proyecto:
 
 Determinista, corre en el pipeline (`step "trazabilidad SDD"`). Sobre `specs/`:
 
-1. **Estructura** (specs en formato híbrido, SPEC-004+ según el campo `Formato` del registro): presencia de `User Story` con prioridad, `Functional Requirements` con `FR-NNN`, `Success Criteria` con `SC-NNN`, y `Coverage mapping` (ver `docs/SPEC-FORMAT.md`).
+1. **Estructura** (specs en formato híbrido, según el campo `Formato` del registro): presencia de `User Story` con prioridad, `Functional Requirements` con `FR-NNN`, `Success Criteria` con `SC-NNN`, y `Coverage mapping`.
 2. **Consistencia spec↔registro**: toda `specs/SPEC-*.md` está registrada en `SPECS_REGISTRY.md` con un `Estado` válido; el registro no apunta a archivos inexistentes.
 3. **Cobertura FR→test** (solo specs `active`): cada `FR-NNN` declarado aparece en el `Coverage mapping`, y toda referencia a un archivo `tests/...py` dentro del `Coverage mapping` existe.
 
@@ -59,14 +59,14 @@ Exit code: `0` OK, `1` violaciones, `2` error de uso.
 Ni el hook ni el check juzgan si la spec **describe bien** el cambio. Verifican
 que **exista** una spec gobernante y que las specs estén **bien formadas y
 cubiertas**. La pregunta "¿este cambio introduce un requisito nuevo sin FR?"
-—la que dejó pasar code-first el caso `run_id`— es un juicio de adecuación que
-MUST quedar en las skills (`/analyze`, `/clarify`) y en la revisión humana.
+es un juicio de adecuación que MUST quedar en las skills (`/analyze`,
+`/clarify`) y en la revisión humana.
 
 ---
 
 ## Follow-up registrado
 
-- **FR→test estricto**: hoy las celdas de `Coverage mapping` son prosa. El check valida "todo FR aparece en el mapping" + "paths `tests/...py` referenciados existen", pero no exige que cada FR nombre un nodo de test concreto. El mapeo estricto FR→nodo requeriría **endurecer `docs/SPEC-FORMAT.md`** (celdas con identificadores de test) y migrar las tablas de las specs existentes. Diferido.
+- **FR→test estricto**: hoy las celdas de `Coverage mapping` son prosa. El check valida "todo FR aparece en el mapping" + "paths `tests/...py` referenciados existen", pero no exige que cada FR nombre un nodo de test concreto. El mapeo estricto FR→nodo requeriría endurecer el formato de spec (celdas con identificadores de test). Diferido.
 - **`git init`**: habilitaría un backstop de `pre-commit` además del hook (que solo cubre la ruta del asistente). Deuda de entorno registrada en `historial/sdd.md`.
 
 ---
@@ -74,6 +74,5 @@ MUST quedar en las skills (`/analyze`, `/clarify`) y en la revisión humana.
 ## Referencias
 
 - `CONSTITUTION.md` — Principio V (invariante).
-- `docs/SPEC-FORMAT.md` — formato de spec que valida la capa estructural.
 - `specs/SPECS_REGISTRY.md` — registro central de specs.
 - `analisis/SDD/software/DECISION-ADOPTAR-VS-PORTAR-SPECKIT.md` — decisión de la vía B (externa al repo).
