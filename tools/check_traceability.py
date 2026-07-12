@@ -2,8 +2,8 @@
 
 Gate determinista de trazabilidad del proyecto. Sobre el directorio de specs:
 
-1. Estructura: cada spec en formato hibrido (SPEC-004+, segun el campo Formato
-   del registro) tiene las secciones obligatorias de docs/SPEC-FORMAT.md
+1. Estructura: cada spec que el registro marque con un formato estructurado
+   (campo Formato de SPECS_REGISTRY.md) tiene las secciones obligatorias
    (User Story con prioridad, Functional Requirements con FR-NNN, Success
    Criteria con SC-NNN, Coverage mapping).
 2. Consistencia spec<->registro: toda spec en disco esta registrada en
@@ -175,8 +175,7 @@ def main(argv: list[str]) -> int:
         for err in errors:
             print(f"  x {err}", file=sys.stderr)
         print(
-            f"\nTotal: {len(errors)} problema(s). "
-            f"Ver docs/SDD-ENFORCEMENT.md y docs/SPEC-FORMAT.md.",
+            f"\nTotal: {len(errors)} problema(s). Ver docs/SDD-ENFORCEMENT.md.",
             file=sys.stderr,
         )
         return 1
