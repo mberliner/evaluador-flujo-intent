@@ -2,6 +2,8 @@
 
 Cada entrada registra el cierre de una iteración: scope, decisiones tomadas, specs afectadas, deuda arrastrada. Sirve como memoria del proyecto para detectar cascadas ocultas y validar que las specs son vivas.
 
+**Orden:** las entradas nuevas se agregan al **principio** (más reciente arriba), nunca al final.
+
 ---
 
 ## 2026-07-07 — Refactor de capas (ADR-005): sin orquestación duplicada ni conocimiento de formato en los composition roots
